@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+
+{% block title %}Sign In – FraudGuard Global Protection{% endblock %}
+{% block page_title %}Security Access Gateway{% endblock %}
+{% block page_subtitle %}Authenticate to access your isolated transaction portal or administrative console{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 70vh;">
+  <div class="col-12 col-md-8 col-lg-5">
+    
+    <!-- AUTH CARD -->
+    <div class="card p-4 shadow-lg" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+      <div class="text-center mb-4">
+        <div class="brand-logo-icon mx-auto mb-3" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); border-radius: 12px;">
+          <i data-lucide="shield-check" style="width: 28px; height: 28px; color: #fff;"></i>
+        </div>
+        <h3 class="fw-bold text-white mb-1">Welcome to FraudGuard</h3>
+        <p class="text-muted small">Enter your credentials to access your secure workspace</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.login_view') }}" id="loginForm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="username" class="form-label small fw-semibold text-light">Username or Email</label>
+          <div class="input-group">
+            <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="user" style="width: 16px; height: 16px;"></i></span>
+            <input type="text" class="form-control bg-dark text-white border-secondary" id="username" name="username" placeholder="e.g. customer_alex or admin" required autofocus>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <label for="password" class="form-label small fw-semibold text-light mb-0">Password</label>
+          </div>
+          <div class="input-group">
+            <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="lock" style="width: 16px; height: 16px;"></i></span>
+            <input type="password" class="form-control bg-dark text-white border-secondary" id="password" name="password" placeholder="Enter your password" required>
+            <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" title="Toggle visibility">
+              <i data-lucide="eye" id="togglePasswordIcon" style="width: 16px; height: 16px;"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-4 form-check">
+          <input type="checkbox" class="form-check-input bg-dark border-secondary" id="remember_me" name="remember_me">
+          <label class="form-check-label small text-muted" for="remember_me">Keep me authenticated on this device</label>
+        </div>
+
+        <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+          <i data-lucide="log-in" style="width: 18px; height: 18px;"></i>
+          <span>Authenticate & Access Portal</span>
+        </button>
+      </form>
+
+      <!-- DEMO QUICK LOGIN PRESETS -->
+      <div class="mt-4 pt-3 border-top border-secondary-subtle">
+        <div class="text-center small text-muted mb-2 fw-semibold">Quick-Access Demo Credentials</div>
+        <div class="d-grid gap-2">
+          <button type="button" class="btn btn-sm btn-outline-info text-start d-flex justify-content-between align-items-center demo-btn" data-user="customer_alex" data-pass="CustomerPass2026!">
+            <span><i data-lucide="user" style="width: 14px; height: 14px;"></i> Customer 1: <strong>Alex Morgan (USD)</strong></span>
+            <span class="badge bg-secondary">customer_alex</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-info text-start d-flex justify-content-between align-items-center demo-btn" data-user="customer_priya" data-pass="CustomerPass2026!">
+            <span><i data-lucide="user" style="width: 14px; height: 14px;"></i> Customer 2: <strong>Priya Sharma (INR)</strong></span>
+            <span class="badge bg-secondary">customer_priya</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger text-start d-flex justify-content-between align-items-center demo-btn" data-user="admin" data-pass="AdminPassword2026!">
+            <span><i data-lucide="shield" style="width: 14px; height: 14px;"></i> Security Administrator</span>
+            <span class="badge bg-danger">admin</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center mt-4">
+        <span class="text-muted small">New to FraudGuard? </span>
+        <a href="{{ url_for('auth.register_view') }}" class="small text-info fw-semibold">Create an account</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Quick demo credential autofill
+  document.querySelectorAll('.demo-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.getElementById('username').value = btn.getAttribute('data-user');
+      document.getElementById('password').value = btn.getAttribute('data-pass');
+    });
+  });
+
+  // Password visibility toggle
+  const toggleBtn = document.getElementById('togglePasswordBtn');
+  const passInput = document.getElementById('password');
+  const icon = document.getElementById('togglePasswordIcon');
+  if (toggleBtn && passInput) {
+    toggleBtn.addEventListener('click', () => {
+      if (passInput.type === 'password') {
+        passInput.type = 'text';
+        icon.setAttribute('data-lucide', 'eye-off');
+      } else {
+        passInput.type = 'password';
+        icon.setAttribute('data-lucide', 'eye');
+      }
+      lucide.createIcons();
+    });
+  }
+</script>
+{% endblock %}

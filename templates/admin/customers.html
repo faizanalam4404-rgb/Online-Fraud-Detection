@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Accounts – FraudGuard Security Operations{% endblock %}
+{% block page_title %}Customer Tenant Directory & Access Control{% endblock %}
+{% block page_subtitle %}Manage customer tenant partitions, inspect isolated telemetry, and activate or deactivate accounts{% endblock %}
+
+{% block content %}
+<!-- CONTROLS BAR -->
+<div class="card p-3 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="row g-2 align-items-center">
+    <div class="col-12 col-md-6">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+        <input type="text" class="form-control bg-dark text-white border-secondary" id="custSearch" placeholder="Search customer by name, username, email, country...">
+      </div>
+    </div>
+    <div class="col-6 col-md-3">
+      <select class="form-select form-select-sm bg-dark text-white border-secondary" id="custStatusFilter">
+        <option value="all">All Statuses</option>
+        <option value="active">Active Accounts Only</option>
+        <option value="deactivated">Deactivated Accounts Only</option>
+      </select>
+    </div>
+    <div class="col-6 col-md-3 text-end">
+      <span class="text-muted small" id="totalCustLabel">Loading customers...</span>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER DIRECTORY TABLE -->
+<div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+      <thead>
+        <tr class="text-muted small text-uppercase">
+          <th>ID</th>
+          <th>Full Name</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Country</th>
+          <th>Reporting Currency</th>
+          <th>Status</th>
+          <th>Transactions</th>
+          <th>Volume (USD)</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="customersTbody">
+        <tr>
+          <td colspan="10" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div>
+            Loading customers...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary-subtle">
+    <div class="small text-muted" id="custPageInfo">Showing page 1</div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" id="btnCustPrev" disabled>Previous</button>
+      <button class="btn btn-sm btn-outline-secondary" id="btnCustNext" disabled>Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOMER DETAIL MODAL -->
+<div class="modal fade" id="customerDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
+      <div class="modal-header border-secondary-subtle">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+          <i data-lucide="user-check" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+          <span>Customer Tenant Partition Inspection</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="customerModalBody">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let custPage = 1;
+  let custPages = 1;
+
+  async function loadCustomers(page = 1) {
+    custPage = page;
+    const search = document.getElementById('custSearch').value.trim();
+    const status = document.getElementById('custStatusFilter').value;
+
+    const params = new URLSearchParams({
+      page: custPage,
+      per_page: 15,
+      search: search,
+      status: status
+    });
+
+    try {
+      const res = await fetch(`{{ url_for("admin.api_customers") }}?${params.toString()}`);
+      const json = await res.json();
+      if (json.status !== 'success') return;
+
+      const data = json.data;
+      const tbody = document.getElementById('customersTbody');
+      tbody.innerHTML = '';
+
+      document.getElementById('totalCustLabel').textContent = `${data.total} registered customer${data.total === 1 ? '' : 's'}`;
+
+      if (!data.customers || data.customers.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No matching customer accounts found.</td></tr>`;
+        document.getElementById('custPageInfo').textContent = 'Showing 0 records';
+        document.getElementById('btnCustPrev').disabled = true;
+        document.getElementById('btnCustNext').disabled = true;
+        return;
+      }
+
+      data.customers.forEach(u => {
+        const tr = document.createElement('tr');
+        const isActive = u.account_status === 'active';
+        const statusBadge = isActive 
+          ? `<span class="badge bg-success">ACTIVE</span>`
+          : `<span class="badge bg-danger">DEACTIVATED</span>`;
+        const toggleBtnText = isActive ? 'Deactivate' : 'Activate';
+        const toggleBtnClass = isActive ? 'btn-outline-danger' : 'btn-outline-success';
+
+        tr.innerHTML = `
+          <td class="font-monospace text-muted small">#${u.id}</td>
+          <td class="text-white fw-semibold">${u.full_name || u.username}</td>
+          <td class="font-monospace text-info small">@${u.username}</td>
+          <td class="small text-muted">${u.email}</td>
+          <td class="small text-muted">${u.country || 'N/A'}</td>
+          <td><span class="currency-pill">${u.preferred_currency || 'USD'}</span></td>
+          <td>${statusBadge}</td>
+          <td class="font-monospace text-white">${u.stats ? u.stats.total_transactions : 0}</td>
+          <td class="font-monospace text-muted small">$${u.stats ? u.stats.total_volume_usd.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</td>
+          <td class="text-end">
+            <div class="d-flex justify-content-end gap-1">
+              <button class="btn btn-sm btn-outline-secondary py-0 px-2 btn-view-cust" data-id="${u.id}">Inspect</button>
+              <button class="btn btn-sm ${toggleBtnClass} py-0 px-2 btn-toggle-status" data-id="${u.id}" data-status="${u.account_status}">
+                ${toggleBtnText}
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Pagination
+      custPages = data.pages || 1;
+      document.getElementById('custPageInfo').textContent = `Showing page ${data.page} of ${custPages} (${data.total} total customers)`;
+      document.getElementById('btnCustPrev').disabled = !data.has_prev;
+      document.getElementById('btnCustNext').disabled = !data.has_next;
+
+      // Event bindings
+      document.querySelectorAll('.btn-view-cust').forEach(b => {
+        b.addEventListener('click', () => viewCustomerDetail(b.getAttribute('data-id')));
+      });
+
+      document.querySelectorAll('.btn-toggle-status').forEach(b => {
+        b.addEventListener('click', () => toggleCustomerStatus(b.getAttribute('data-id'), b.getAttribute('data-status')));
+      });
+
+      if (window.lucide) lucide.createIcons();
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  async function toggleCustomerStatus(userId, currentStatus) {
+    const nextStatus = currentStatus === 'active' ? 'deactivated' : 'active';
+    if (!confirm(`Are you sure you want to set customer #${userId} to ${nextStatus.toUpperCase()}?`)) return;
+
+    try {
+      const res = await fetch(`/admin/api/customers/${userId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: nextStatus })
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        loadCustomers(custPage);
+      } else {
+        alert(data.message || 'Failed to update customer status');
+      }
+    } catch (e) {
+      alert('Error updating customer status');
+    }
+  }
+
+  async function viewCustomerDetail(userId) {
+    try {
+      const res = await fetch(`/admin/api/customers/${userId}`);
+      const json = await res.json();
+      if (json.status !== 'success') return;
+      const u = json.data;
+
+      const body = document.getElementById('customerModalBody');
+      const txRows = (u.recent_transactions || []).map(t => `
+        <tr>
+          <td class="font-monospace small text-info">${t.trans_uuid}</td>
+          <td class="small text-muted">${t.transaction_timestamp || t.created_at}</td>
+          <td><span class="badge bg-secondary">${t.transaction_type}</span></td>
+          <td class="font-monospace small">${t.formatted_amount || t.transaction_amount + ' ' + t.currency_code}</td>
+          <td><span class="badge ${t.is_fraud === 1 ? 'bg-danger' : 'bg-success'}">${t.prediction}</span></td>
+        </tr>
+      `).join('');
+
+      body.innerHTML = `
+        <div class="row g-3 mb-3">
+          <div class="col-12 col-md-6">
+            <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+              <div class="small text-muted">Customer Name</div>
+              <div class="h5 text-white fw-bold mb-1">${u.full_name || u.username}</div>
+              <div class="small text-muted">Username: <span class="text-info font-monospace">@${u.username}</span></div>
+              <div class="small text-muted">Email: <span class="text-white">${u.email}</span></div>
+              <div class="small text-muted">Country: ${u.country || 'N/A'}</div>
+              <div class="small text-muted mt-2">Member Since: ${u.created_at}</div>
+            </div>
+          </div>
+          <div class="col-12 col-md-6">
+            <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+              <div class="small text-muted">Tenant Isolation Summary</div>
+              <div class="d-flex justify-content-between mt-1"><span class="small text-muted">Total Transactions:</span> <strong class="text-white font-monospace">${u.stats ? u.stats.total_transactions : 0}</strong></div>
+              <div class="d-flex justify-content-between"><span class="small text-muted">Flagged Fraud:</span> <strong class="text-danger font-monospace">${u.stats ? u.stats.fraud_count : 0}</strong></div>
+              <div class="d-flex justify-content-between"><span class="small text-muted">Total Volume USD:</span> <strong class="text-success font-monospace">$${u.stats ? u.stats.total_volume_usd.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</strong></div>
+              <div class="d-flex justify-content-between"><span class="small text-muted">Preferred Reporting:</span> <span class="currency-pill">${u.preferred_currency || 'USD'}</span></div>
+              <div class="small text-muted mt-2 border-top border-secondary-subtle pt-2" style="font-size: 0.72rem;">* Sensitive password hashes are cryptographically sealed and never exposed.</div>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="fw-bold text-white mb-2">Recent Isolated Transactions for @${u.username}</h6>
+        <div class="table-responsive">
+          <table class="table table-dark table-sm mb-0">
+            <thead>
+              <tr class="text-muted small">
+                <th>UUID</th>
+                <th>Timestamp</th>
+                <th>Rail</th>
+                <th>Amount</th>
+                <th>Verdict</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${txRows || '<tr><td colspan="5" class="text-center py-2 text-muted">No transactions recorded for this customer.</td></tr>'}
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      const modal = new bootstrap.Modal(document.getElementById('customerDetailModal'));
+      modal.show();
+      if (window.lucide) lucide.createIcons();
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  // Filter bindings
+  document.getElementById('custSearch').addEventListener('keyup', (e) => {
+    if (e.key === 'Enter') loadCustomers(1);
+  });
+  document.getElementById('custStatusFilter').addEventListener('change', () => loadCustomers(1));
+  document.getElementById('btnCustPrev').addEventListener('click', () => {
+    if (custPage > 1) loadCustomers(custPage - 1);
+  });
+  document.getElementById('btnCustNext').addEventListener('click', () => {
+    if (custPage < custPages) loadCustomers(custPage + 1);
+  });
+
+  document.addEventListener('DOMContentLoaded', () => loadCustomers(1));
+</script>
+{% endblock %}
+

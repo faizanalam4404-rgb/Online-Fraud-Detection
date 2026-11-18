@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block title %}Customer Portal – FraudGuard{% endblock %}
+{% block page_title %}Customer Dashboard{% endblock %}
+{% block page_subtitle %}Personal payment activity, fraud detection telemetry, and account overview{% endblock %}
+
+{% block content %}
+<!-- CUSTOMER WELCOME BANNER -->
+<div class="card p-4 mb-4" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+    <div>
+      <div class="d-flex align-items-center gap-2 mb-1">
+        <span class="badge bg-primary text-uppercase" style="font-size: 0.65rem;">Isolated Customer Workspace</span>
+        <span class="text-muted small">Account #FG-00{{ current_user.id }}</span>
+      </div>
+      <h3 class="fw-bold text-white mb-1">Welcome back, {{ current_user.full_name or current_user.username }}</h3>
+      <p class="text-muted small mb-0">
+        Preferred Reporting Currency: <strong class="text-info">{{ current_user.preferred_currency }}</strong> · All statistics isolated strictly to your account.
+      </p>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('customer.detection_view') }}" class="btn btn-primary d-flex align-items-center gap-2">
+        <i data-lucide="scan-line" style="width: 16px; height: 16px;"></i>
+        <span>Analyze Payment</span>
+      </a>
+      <a href="{{ url_for('customer.history_view') }}" class="btn btn-outline-secondary text-light d-flex align-items-center gap-2" style="border-color: var(--border-color);">
+        <i data-lucide="history" style="width: 16px; height: 16px;"></i>
+        <span>Full History</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- STATS CARDS GRID -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card cyan p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Total Analyzed</span>
+        <i data-lucide="activity" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+      </div>
+      <div class="h3 fw-bold text-white mb-0 font-monospace" id="kpi-total">--</div>
+      <div class="small text-muted mt-1" id="kpi-volume">Volume: --</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card emerald p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Legitimate Payments</span>
+        <i data-lucide="shield-check" style="width: 18px; height: 18px; color: var(--emerald);"></i>
+      </div>
+      <div class="h3 fw-bold text-emerald mb-0 font-monospace" id="kpi-legit" style="color: var(--emerald);">--</div>
+      <div class="small text-muted mt-1">Verified safe transactions</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card rose p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Flagged Fraud</span>
+        <i data-lucide="shield-alert" style="width: 18px; height: 18px; color: var(--rose);"></i>
+      </div>
+      <div class="h3 fw-bold text-danger mb-0 font-monospace" id="kpi-fraud" style="color: var(--rose);">--</div>
+      <div class="small text-muted mt-1">Blocked or quarantined</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card amber p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Personal Fraud Rate</span>
+        <i data-lucide="percent" style="width: 18px; height: 18px; color: var(--amber);"></i>
+      </div>
+      <div class="h3 fw-bold text-warning mb-0 font-monospace" id="kpi-rate" style="color: var(--amber);">--%</div>
+      <div class="small text-muted mt-1">Fraud / Total Transactions</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS ROW -->
+<div class="row g-4 mb-4">
+  <div class="col-12 col-lg-5">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="pie-chart" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+        <span>Transaction Safety Ratio</span>
+      </h5>
+      <div style="position: relative; height: 240px;">
+        <canvas id="ratioChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-7">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="bar-chart-2" style="width: 18px; height: 18px; color: var(--blue);"></i>
+        <span>Payment Rail Distribution</span>
+      </h5>
+      <div style="position: relative; height: 240px;">
+        <canvas id="railChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- RECENT TRANSACTIONS TABLE -->
+<div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+      <i data-lucide="history" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+      <span>Recent Analyzed Transactions</span>
+    </h5>
+    <a href="{{ url_for('customer.history_view') }}" class="btn btn-sm btn-outline-info">View All Transactions</a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+      <thead>
+        <tr class="text-muted small text-uppercase">
+          <th>Ref ID</th>
+          <th>Date & Time</th>
+          <th>Rail / Type</th>
+          <th>Original Amount</th>
+          <th>USD Converted</th>
+          <th>Verdict</th>
+          <th>Risk Tier</th>
+          <th>Fraud Prob</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody id="recent-tx-tbody">
+        <tr>
+          <td colspan="9" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div>
+            Loading isolated transactions...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TRANSACTION DETAIL MODAL -->
+<div class="modal fade" id="txDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
+      <div class="modal-header border-secondary-subtle">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+          <i data-lucide="shield" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+          <span>Transaction Security Inspection</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="txDetailModalBody">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let ratioChartInstance = null;
+  let railChartInstance = null;
+
+  async function loadCustomerDashboard() {
+    try {
+      const res = await fetch('{{ url_for("customer.api_dashboard") }}');
+      const data = await res.json();
+      if (data.status !== 'success') return;
+
+      const summary = data.summary;
+      document.getElementById('kpi-total').textContent = summary.total_transactions.toLocaleString();
+      document.getElementById('kpi-legit').textContent = summary.legitimate_count.toLocaleString();
+      document.getElementById('kpi-fraud').textContent = summary.fraud_count.toLocaleString();
+      document.getElementById('kpi-rate').textContent = summary.fraud_percentage + '%';
+      document.getElementById('kpi-volume').textContent = 'Vol: ' + summary.total_volume_formatted;
+
+      // Ratio Doughnut Chart
+      const ratioCtx = document.getElementById('ratioChart').getContext('2d');
+      if (ratioChartInstance) ratioChartInstance.destroy();
+      ratioChartInstance = new Chart(ratioCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Legitimate', 'Fraudulent'],
+          datasets: [{
+            data: [summary.legitimate_count, summary.fraud_count],
+            backgroundColor: ['#10b981', '#f43f5e'],
+            borderColor: 'var(--bg-card)',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // Payment Rail Bar Chart
+      const railStats = data.channel_stats || {};
+      const railLabels = Object.keys(railStats);
+      const railLegit = railLabels.map(k => railStats[k].legitimate || 0);
+      const railFraud = railLabels.map(k => railStats[k].fraud || 0);
+
+      const railCtx = document.getElementById('railChart').getContext('2d');
+      if (railChartInstance) railChartInstance.destroy();
+      railChartInstance = new Chart(railCtx, {
+        type: 'bar',
+        data: {
+          labels: railLabels.length ? railLabels : ['PAYMENT', 'TRANSFER', 'CASH_OUT'],
+          datasets: [
+            { label: 'Legitimate', data: railLegit.length ? railLegit : [0,0,0], backgroundColor: '#10b981' },
+            { label: 'Fraudulent', data: railFraud.length ? railFraud : [0,0,0], backgroundColor: '#f43f5e' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, ticks: { color: '#94a3b8' } },
+            y: { stacked: true, ticks: { color: '#94a3b8', stepSize: 1 } }
+          },
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // Populate Table
+      const tbody = document.getElementById('recent-tx-tbody');
+      tbody.innerHTML = '';
+      if (!data.recent_transactions || data.recent_transactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No transactions found. <a href="{{ url_for('customer.detection_view') }}" class="text-info">Analyze your first payment</a></td></tr>`;
+        return;
+      }
+
+      data.recent_transactions.forEach(tx => {
+        const tr = document.createElement('tr');
+        const isFraud = tx.is_fraud === 1;
+        const verdictBadge = isFraud 
+          ? `<span class="badge bg-danger">FRAUDULENT</span>`
+          : `<span class="badge bg-success">LEGITIMATE</span>`;
+        const riskClass = (tx.risk_level || 'low').toLowerCase();
+
+        tr.innerHTML = `
+          <td class="font-monospace small text-info fw-semibold">${tx.trans_uuid}</td>
+          <td class="small text-muted">${tx.transaction_timestamp || tx.created_at}</td>
+          <td><span class="badge bg-secondary">${tx.transaction_type}</span></td>
+          <td class="fw-semibold font-monospace">${tx.formatted_amount || tx.transaction_amount + ' ' + tx.currency_code}</td>
+          <td class="small text-muted font-monospace">${tx.formatted_usd || '$' + tx.amount_usd}</td>
+          <td>${verdictBadge}</td>
+          <td><span class="risk-badge ${riskClass}">${tx.risk_level || 'LOW'}</span></td>
+          <td class="font-monospace small">${(tx.fraud_probability * 100).toFixed(1)}%</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2 btn-detail" data-txn='${JSON.stringify(tx).replace(/'/g, "&apos;")}'>
+              Inspect
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Bind detail inspect buttons
+      document.querySelectorAll('.btn-detail').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tx = JSON.parse(btn.getAttribute('data-txn'));
+          showTransactionModal(tx);
+        });
+      });
+
+      if (window.lucide) lucide.createIcons();
+
+    } catch (e) {
+      console.error("Dashboard fetch error:", e);
+    }
+  }
+
+  function showTransactionModal(tx) {
+    const isFraud = tx.is_fraud === 1;
+    const body = document.getElementById('txDetailModalBody');
+    const reasons = (tx.risk_reasons || []).map(r => `<li class="small mb-1 text-muted">${r}</li>`).join('');
+
+    body.innerHTML = `
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small text-muted">Reference UUID</div>
+            <div class="h6 font-monospace text-info mb-2">${tx.trans_uuid}</div>
+            <div class="small text-muted">Original Amount</div>
+            <div class="h5 font-monospace text-white">${tx.formatted_amount || tx.transaction_amount + ' ' + tx.currency_code}</div>
+            <div class="small text-muted mt-1">USD Normalized: <strong class="text-white">${tx.formatted_usd || '$' + tx.amount_usd}</strong></div>
+            <div class="small text-muted">Exchange Rate Used: 1 USD = ${tx.exchange_rate_used} ${tx.currency_code}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small text-muted">Machine Learning Verdict</div>
+            <div class="h5 ${isFraud ? 'text-danger' : 'text-success'} fw-bold mb-1">${tx.prediction}</div>
+            <div class="small text-muted">Fraud Probability: <strong class="text-white font-monospace">${(tx.fraud_probability * 100).toFixed(2)}%</strong></div>
+            <div class="small text-muted">Risk Tier: <span class="risk-badge ${(tx.risk_level||'low').toLowerCase()}">${tx.risk_level}</span></div>
+            <div class="small text-muted mt-2">Model Pipeline: <strong>Random Forest v${tx.model_version || '1.0'}</strong></div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small fw-bold text-white mb-2">Account Reconciliation & Flow:</div>
+            <div class="row g-2 text-muted small font-monospace">
+              <div class="col-6">Sender Old: ${tx.oldbalance_org}</div>
+              <div class="col-6">Sender New: ${tx.newbalance_orig}</div>
+              <div class="col-6">Recipient Old: ${tx.oldbalance_dest}</div>
+              <div class="col-6">Recipient New: ${tx.newbalance_dest}</div>
+            </div>
+          </div>
+        </div>
+        ${reasons ? `
+        <div class="col-12">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small fw-bold text-white mb-2">Cybersecurity Audit Reasons:</div>
+            <ul class="ps-3 mb-0">${reasons}</ul>
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('txDetailModal'));
+    modal.show();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  document.addEventListener('DOMContentLoaded', loadCustomerDashboard);
+</script>
+{% endblock %}
+

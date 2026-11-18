@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+
+{% block title %}My Profile – FraudGuard Customer Portal{% endblock %}
+{% block page_title %}Account Profile & Verification{% endblock %}
+{% block page_subtitle %}Manage your personal details, reporting currency preference, and tenant security status{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="user" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+        <span>Personal Information</span>
+      </h5>
+
+      <form method="POST" action="{{ url_for('customer.profile_view') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label for="username" class="form-label small fw-semibold text-light">Username</label>
+            <input type="text" class="form-control bg-dark text-muted border-secondary" id="username" value="{{ current_user.username }}" disabled>
+            <div class="form-text text-muted" style="font-size: 0.72rem;">Usernames are permanently bound to your isolation partition.</div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="email" class="form-label small fw-semibold text-light">Email Address</label>
+            <input type="email" class="form-control bg-dark text-muted border-secondary" id="email" value="{{ current_user.email }}" disabled>
+            <div class="form-text text-muted" style="font-size: 0.72rem;">Primary security contact on record.</div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="full_name" class="form-label small fw-semibold text-light">Legal Full Name</label>
+            <input type="text" class="form-control bg-dark text-white border-secondary" id="full_name" name="full_name" value="{{ current_user.full_name or '' }}" required>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="country" class="form-label small fw-semibold text-light">Country of Operation</label>
+            <input type="text" class="form-control bg-dark text-white border-secondary" id="country" name="country" value="{{ current_user.country or '' }}">
+          </div>
+
+          <div class="col-12">
+            <label for="preferred_currency" class="form-label small fw-semibold text-light">Default Reporting Currency (ISO 4217)</label>
+            <select class="form-select bg-dark text-white border-secondary" id="preferred_currency" name="preferred_currency">
+              <option value="USD" {% if current_user.preferred_currency == 'USD' %}selected{% endif %}>USD – US Dollar ($)</option>
+              <option value="EUR" {% if current_user.preferred_currency == 'EUR' %}selected{% endif %}>EUR – Euro (€)</option>
+              <option value="INR" {% if current_user.preferred_currency == 'INR' %}selected{% endif %}>INR – Indian Rupee (₹)</option>
+              <option value="GBP" {% if current_user.preferred_currency == 'GBP' %}selected{% endif %}>GBP – British Pound (£)</option>
+              <option value="JPY" {% if current_user.preferred_currency == 'JPY' %}selected{% endif %}>JPY – Japanese Yen (¥)</option>
+              <option value="CAD" {% if current_user.preferred_currency == 'CAD' %}selected{% endif %}>CAD – Canadian Dollar (CA$)</option>
+              <option value="AUD" {% if current_user.preferred_currency == 'AUD' %}selected{% endif %}>AUD – Australian Dollar (A$)</option>
+              <option value="CHF" {% if current_user.preferred_currency == 'CHF' %}selected{% endif %}>CHF – Swiss Franc (CHF)</option>
+              <option value="CNY" {% if current_user.preferred_currency == 'CNY' %}selected{% endif %}>CNY – Chinese Yuan (¥)</option>
+              <option value="SGD" {% if current_user.preferred_currency == 'SGD' %}selected{% endif %}>SGD – Singapore Dollar (S$)</option>
+              <option value="AED" {% if current_user.preferred_currency == 'AED' %}selected{% endif %}>AED – UAE Dirham (AED)</option>
+              <option value="SAR" {% if current_user.preferred_currency == 'SAR' %}selected{% endif %}>SAR – Saudi Riyal (SAR)</option>
+              {% if currencies %}
+                {% for c in currencies %}
+                  {% if c.code not in ['USD','EUR','INR','GBP','JPY','CAD','AUD','CHF','CNY','SGD','AED','SAR'] %}
+                    <option value="{{ c.code }}" {% if current_user.preferred_currency == c.code %}selected{% endif %}>{{ c.code }} – {{ c.name }} ({{ c.symbol }})</option>
+                  {% endif %}
+                {% endfor %}
+              {% endif %}
+            </select>
+            <div class="form-text text-muted" style="font-size: 0.72rem;">Sets the default currency for statement exports and dashboard summaries.</div>
+          </div>
+
+          <div class="col-12 mt-4">
+            <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+              <i data-lucide="save" style="width: 16px; height: 16px;"></i>
+              <span>Save Profile Changes</span>
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="shield-check" style="width: 20px; height: 20px; color: var(--emerald);"></i>
+        <span>Tenant Security & Isolation Status</span>
+      </h5>
+
+      <div class="d-flex flex-column gap-3">
+        <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+          <div class="small text-muted">Customer UUID Partition</div>
+          <div class="font-monospace text-info small">FG-TENANT-USER-00{{ current_user.id }}</div>
+        </div>
+
+        <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+          <div class="small text-muted">Account Role</div>
+          <span class="badge bg-primary text-uppercase">{{ current_user.role }}</span>
+        </div>
+
+        <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+          <div class="small text-muted">Account Status</div>
+          <span class="badge bg-success">ACTIVE & VERIFIED</span>
+        </div>
+
+        <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+          <div class="small text-muted">Registration Date</div>
+          <div class="text-white small">{{ current_user.created_at.strftime('%Y-%m-%d %H:%M:%S UTC') if current_user.created_at else 'Active' }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

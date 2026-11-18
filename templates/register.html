@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}Create Account – FraudGuard Global Protection{% endblock %}
+{% block page_title %}Customer Registration{% endblock %}
+{% block page_subtitle %}Set up your isolated customer payment fraud monitoring portal{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center py-4">
+  <div class="col-12 col-md-10 col-lg-7">
+    
+    <div class="card p-4 p-md-5 shadow-lg" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-lg);">
+      <div class="text-center mb-4">
+        <div class="brand-logo-icon mx-auto mb-3" style="width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, var(--blue), var(--cyan)); border-radius: 12px;">
+          <i data-lucide="user-plus" style="width: 26px; height: 26px; color: #fff;"></i>
+        </div>
+        <h3 class="fw-bold text-white mb-1">Create Customer Account</h3>
+        <p class="text-muted small">Instant isolated workspace with global multi-currency fraud monitoring</p>
+      </div>
+
+      <form method="POST" action="{{ url_for('auth.register_view') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="row g-3">
+          <div class="col-12 col-md-6">
+            <label for="full_name" class="form-label small fw-semibold text-light">Full Legal Name</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="user" style="width: 16px; height: 16px;"></i></span>
+              <input type="text" class="form-control bg-dark text-white border-secondary" id="full_name" name="full_name" placeholder="e.g. John Doe" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="username" class="form-label small fw-semibold text-light">Username</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="at-sign" style="width: 16px; height: 16px;"></i></span>
+              <input type="text" class="form-control bg-dark text-white border-secondary" id="username" name="username" placeholder="e.g. johndoe" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="email" class="form-label small fw-semibold text-light">Business / Personal Email</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="mail" style="width: 16px; height: 16px;"></i></span>
+              <input type="email" class="form-control bg-dark text-white border-secondary" id="email" name="email" placeholder="john@example.com" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="country" class="form-label small fw-semibold text-light">Country</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="map-pin" style="width: 16px; height: 16px;"></i></span>
+              <input type="text" class="form-control bg-dark text-white border-secondary" id="country" name="country" placeholder="e.g. United States, India, Germany" value="United States">
+            </div>
+          </div>
+
+          <div class="col-12">
+            <label for="preferred_currency" class="form-label small fw-semibold text-light">Preferred Default Currency (ISO 4217)</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="coins" style="width: 16px; height: 16px;"></i></span>
+              <select class="form-select bg-dark text-white border-secondary" id="preferred_currency" name="preferred_currency" required>
+                <option value="USD" selected>USD – US Dollar ($)</option>
+                <option value="INR">INR – Indian Rupee (₹)</option>
+                <option value="EUR">EUR – Euro (€)</option>
+                <option value="GBP">GBP – British Pound (£)</option>
+                <option value="JPY">JPY – Japanese Yen (¥)</option>
+                <option value="CNY">CNY – Chinese Yuan (¥)</option>
+                <option value="CAD">CAD – Canadian Dollar (CA$)</option>
+                <option value="AUD">AUD – Australian Dollar (A$)</option>
+                <option value="CHF">CHF – Swiss Franc (CHF)</option>
+                <option value="SGD">SGD – Singapore Dollar (S$)</option>
+                <option value="AED">AED – UAE Dirham (AED)</option>
+                <option value="SAR">SAR – Saudi Riyal (SAR)</option>
+                <option value="BRL">BRL – Brazilian Real (R$)</option>
+                <option value="ZAR">ZAR – South African Rand (R)</option>
+                <option value="SEK">SEK – Swedish Krona (kr)</option>
+                <option value="NOK">NOK – Norwegian Krone (kr)</option>
+                <option value="MXN">MXN – Mexican Peso (MX$)</option>
+                <option value="KRW">KRW – South Korean Won (₩)</option>
+                {% if currencies %}
+                  {% for c in currencies %}
+                    {% if c.code not in ['USD','INR','EUR','GBP','JPY','CNY','CAD','AUD','CHF','SGD','AED','SAR','BRL','ZAR','SEK','NOK','MXN','KRW'] %}
+                      <option value="{{ c.code }}">{{ c.code }} – {{ c.name }} ({{ c.symbol }})</option>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+            <div class="form-text text-muted" style="font-size: 0.72rem;">All global transaction conversions and statement exports will be calculated in this default currency.</div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="password" class="form-label small fw-semibold text-light">Create Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="lock" style="width: 16px; height: 16px;"></i></span>
+              <input type="password" class="form-control bg-dark text-white border-secondary" id="password" name="password" placeholder="Min. 6 characters" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="confirm_password" class="form-label small fw-semibold text-light">Confirm Password</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="check" style="width: 16px; height: 16px;"></i></span>
+              <input type="password" class="form-control bg-dark text-white border-secondary" id="confirm_password" name="confirm_password" placeholder="Repeat password" required>
+            </div>
+          </div>
+
+          <div class="col-12 mt-4">
+            <div class="form-check">
+              <input class="form-check-input bg-dark border-secondary" type="checkbox" id="termsCheck" required checked>
+              <label class="form-check-label small text-muted" for="termsCheck">
+                I agree to the <a href="{{ url_for('api.about_page') }}" class="text-info">Terms of Service</a> and acknowledge customer data isolation policy.
+              </label>
+            </div>
+          </div>
+
+          <div class="col-12 mt-4">
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+              <i data-lucide="shield-check" style="width: 18px; height: 18px;"></i>
+              <span>Create My Secure Account</span>
+            </button>
+          </div>
+        </div>
+      </form>
+
+      <div class="text-center mt-4 pt-2 border-top border-secondary-subtle">
+        <span class="text-muted small">Already have an account? </span>
+        <a href="{{ url_for('auth.login_view') }}" class="small text-info fw-semibold">Sign In here</a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+

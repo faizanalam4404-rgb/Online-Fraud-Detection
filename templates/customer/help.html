@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Help & FAQ – FraudGuard Customer Support{% endblock %}
+{% block page_title %}Customer Support & Security FAQ{% endblock %}
+{% block page_subtitle %}Learn how fraud probabilities are calculated, how currency conversion works, and how to contest false positives{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="accordion" id="faqAccordion">
+      
+      <div class="accordion-item mb-3" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button bg-dark text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+            <i data-lucide="help-circle" style="width: 18px; height: 18px; margin-right: 8px; color: var(--cyan);"></i>
+            How does FraudGuard calculate the Fraud Probability?
+          </button>
+        </h2>
+        <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+          <div class="accordion-body text-muted small" style="background: var(--bg-card-elevated);">
+            FraudGuard uses a fitted Scikit-learn Random Forest ensemble pipeline. The probability represents the percentage of decision trees in the ensemble that classified the engineered feature vector as fraudulent. Features include account balance depletion ratio, destination mule account presence, balance reconciliation errors, and transaction corridor rails.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item mb-3" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed bg-dark text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+            <i data-lucide="coins" style="width: 18px; height: 18px; margin-right: 8px; color: var(--amber);"></i>
+            Are my original transaction amounts or currencies modified during conversion?
+          </button>
+        </h2>
+        <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body text-muted small" style="background: var(--bg-card-elevated);">
+            No. The original transaction amount and currency code are strictly preserved in your database record forever. When evaluating risk, the system calculates an equivalent USD value solely for pipeline scoring and persists the exact exchange rate used for full traceability.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item mb-3" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed bg-dark text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+            <i data-lucide="lock" style="width: 18px; height: 18px; margin-right: 8px; color: var(--emerald);"></i>
+            Can other customers view my transaction history or analytics?
+          </button>
+        </h2>
+        <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body text-muted small" style="background: var(--bg-card-elevated);">
+            Never. FraudGuard enforces strict customer multi-tenancy. Every transaction query, dashboard KPI, and statement export is filtered by <code>user_id == current_user.id</code> at the ORM layer. Other customers cannot view, search, or infer your data under any circumstance.
+          </div>
+        </div>
+      </div>
+
+      <div class="accordion-item mb-3" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md); overflow: hidden;">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed bg-dark text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+            <i data-lucide="file-text" style="width: 18px; height: 18px; margin-right: 8px; color: var(--rose);"></i>
+            How do I generate an official PDF or CSV statement?
+          </button>
+        </h2>
+        <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+          <div class="accordion-body text-muted small" style="background: var(--bg-card-elevated);">
+            Navigate to the <a href="{{ url_for('customer.history_view') }}" class="text-info">Transaction History</a> tab, apply any desired date or status filters, and click the <strong>CSV</strong> or <strong>PDF</strong> button in the top right. A cryptographically signed statement will download instantly.
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="life-buoy" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+        <span>Security Operations Center</span>
+      </h5>
+      <p class="text-muted small">
+        Need assistance with false positive remediation or enterprise API keys? Contact our cybersecurity team:
+      </p>
+      <div class="small text-muted mb-2">
+        <strong>Support Email:</strong> <span class="text-info">support@fraudguard.io</span>
+      </div>
+      <div class="small text-muted mb-3">
+        <strong>Incident Escalation:</strong> <span class="text-danger">secops@fraudguard.io</span>
+      </div>
+      <a href="mailto:support@fraudguard.io" class="btn btn-outline-info btn-sm w-100">Send Support Inquiry</a>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

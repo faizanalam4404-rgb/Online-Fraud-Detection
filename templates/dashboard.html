@@ -1,0 +1,205 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard – FraudGuard Security Operations{% endblock %}
+{% block page_title %}Security Operations Dashboard{% endblock %}
+{% block page_subtitle %}Live metrics, transaction stream monitoring, and ML classification telemetry{% endblock %}
+
+{% block content %}
+<div id="dashboard-view">
+  <!-- METRIC KPI CARDS -->
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-info">
+        <span>Total Analyzed</span>
+        <h3 id="stat-total-txns">0</h3>
+      </div>
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="5" width="20" height="14" rx="2"/>
+          <line x1="2" y1="10" x2="22" y2="10"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat-card emerald">
+      <div class="stat-info">
+        <span>Legitimate</span>
+        <h3 id="stat-legit-txns">0</h3>
+      </div>
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <polyline points="9 12 11 14 15 10"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat-card rose">
+      <div class="stat-info">
+        <span>Fraud Intercepted</span>
+        <h3 id="stat-fraud-txns">0</h3>
+      </div>
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat-card amber">
+      <div class="stat-info">
+        <span>Fraud Detection Rate</span>
+        <h3 id="stat-fraud-rate">0.00%</h3>
+      </div>
+      <div class="stat-icon">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/>
+          <line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS SECTION -->
+  <div class="charts-grid">
+    <!-- Chart 1: Fraud vs Legitimate -->
+    <div class="card">
+      <div class="card-header">
+        <h2>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+            <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+          </svg>
+          <span>Transaction Distribution</span>
+        </h2>
+        <span style="font-size: 0.75rem; color: var(--text-dim);">Live Database</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrapper">
+          <canvas id="chart-fraud-ratio"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chart 2: Transaction Volume by Type -->
+    <div class="card">
+      <div class="card-header">
+        <h2>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2">
+            <line x1="12" y1="20" x2="12" y2="10"/>
+            <line x1="18" y1="20" x2="18" y2="4"/>
+            <line x1="6" y1="20" x2="6" y2="16"/>
+          </svg>
+          <span>Activity by Transaction Channel</span>
+        </h2>
+        <span style="font-size: 0.75rem; color: var(--text-dim);">Total vs Flagged Fraud</span>
+      </div>
+      <div class="card-body">
+        <div class="chart-wrapper">
+          <canvas id="chart-activity"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODEL BENCHMARK SNAPSHOT -->
+  <div class="card" style="background: linear-gradient(135deg, rgba(15, 24, 42, 0.9), rgba(22, 34, 56, 0.7));">
+    <div class="card-header">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+        <span>Model Evaluation Performance Summary</span>
+      </h2>
+      <a href="{{ url_for('model_info_view') }}" class="btn btn-secondary btn-sm" style="font-size: 0.72rem;">
+        <span>View Full ML Architecture</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+    <div class="card-body">
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.25rem;">
+        <div style="border-left: 3px solid var(--cyan); padding-left: 1rem;">
+          <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Active Algorithm</span>
+          <h4 id="dash-model-name" style="font-size: 1.15rem; color: #fff; margin-top: 0.25rem;">Random Forest</h4>
+        </div>
+        <div style="border-left: 3px solid var(--emerald); padding-left: 1rem;">
+          <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Held-out Accuracy</span>
+          <h4 id="dash-model-acc" style="font-size: 1.15rem; color: var(--emerald); margin-top: 0.25rem;">99.82%</h4>
+        </div>
+        <div style="border-left: 3px solid var(--blue); padding-left: 1rem;">
+          <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Precision</span>
+          <h4 id="dash-model-prec" style="font-size: 1.15rem; color: #38bdf8; margin-top: 0.25rem;">93.66%</h4>
+        </div>
+        <div style="border-left: 3px solid var(--amber); padding-left: 1rem;">
+          <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">Recall (Fraud Caught)</span>
+          <h4 id="dash-model-rec" style="font-size: 1.15rem; color: #fbbf24; margin-top: 0.25rem;">98.52%</h4>
+        </div>
+        <div style="border-left: 3px solid var(--purple); padding-left: 1rem;">
+          <span style="font-size: 0.72rem; color: var(--text-dim); text-transform: uppercase;">F1 Balanced Score</span>
+          <h4 id="dash-model-f1" style="font-size: 1.15rem; color: #c084fc; margin-top: 0.25rem;">96.03%</h4>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECENT ACTIVITY TABLE -->
+  <div class="card">
+    <div class="card-header">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <polyline points="12 6 12 12 16 14"/>
+        </svg>
+        <span>Recent Analyzed Transactions</span>
+      </h2>
+      <a href="{{ url_for('history_view') }}" class="btn btn-secondary btn-sm">
+        <span>View Full History</span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+      </a>
+    </div>
+    <div class="card-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>Transaction ID</th>
+              <th>Type</th>
+              <th>Amount</th>
+              <th>ML Decision</th>
+              <th>Risk Tier</th>
+              <th>Analyzed At</th>
+            </tr>
+          </thead>
+          <tbody id="recent-txns-tbody">
+            <!-- Populated via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty state if no transactions exist -->
+      <div id="recent-txns-empty" class="empty-state" style="display: none;">
+        <div class="empty-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <rect x="2" y="5" width="20" height="14" rx="2"/>
+            <line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+        </div>
+        <h4>No Transactions Analyzed Yet</h4>
+        <p>Analyze your first online payment transaction or click "Load Demo Seed Data" to populate with benchmark records.</p>
+        <div style="display: flex; gap: 0.75rem; margin-top: 0.5rem;">
+          <a href="{{ url_for('detection_view') }}" class="btn btn-primary btn-sm">
+            <span>Analyze Transaction</span>
+          </a>
+          <button onclick="handleSeedDemoData()" class="btn btn-secondary btn-sm">
+            <span>Load Demo Seed Data</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

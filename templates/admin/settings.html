@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}Platform Settings – FraudGuard Admin Security{% endblock %}
+{% block page_title %}Administrative System Settings{% endblock %}
+{% block page_subtitle %}Configure global exchange rate feeds, fraud probability thresholds, and security policies{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <!-- EXCHANGE RATE FEED SETTINGS -->
+    <div class="card p-4 mb-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="globe" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+        <span>Global Multi-Currency Engine & Exchange Rates</span>
+      </h5>
+      <p class="text-muted small">
+        FraudGuard normalizes all non-USD transactions using live exchange rates from authoritative external APIs. Baseline rates are cached with timestamps in SQLite to ensure high performance and API resilience.
+      </p>
+
+      <div class="p-3 rounded mb-3" style="background: var(--bg-card-elevated);">
+        <div class="d-flex justify-content-between mb-2">
+          <span class="small text-muted">Active ISO 4217 Currencies:</span>
+          <span class="badge bg-primary font-monospace">60+ Currencies Registered</span>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span class="small text-muted">Primary External Provider:</span>
+          <span class="text-white small font-monospace">Open Exchange Rates / Exchangerate-API</span>
+        </div>
+        <div class="d-flex justify-content-between">
+          <span class="small text-muted">Cache Failover Policy:</span>
+          <span class="badge bg-success font-monospace">Persistent Offline Database Fallback</span>
+        </div>
+      </div>
+
+      <div class="d-flex align-items-center gap-3">
+        <button type="button" class="btn btn-outline-info btn-sm d-flex align-items-center gap-2" id="btnSyncRates">
+          <i data-lucide="refresh-cw" id="syncRatesIcon" style="width: 14px; height: 14px;"></i>
+          <span id="syncRatesText">Trigger Live Exchange Rate Refresh</span>
+        </button>
+        <span class="small text-muted" id="syncRatesResult"></span>
+      </div>
+    </div>
+
+    <!-- RISK THRESHOLD SETTINGS -->
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="sliders" style="width: 20px; height: 20px; color: var(--amber);"></i>
+        <span>Fraud Risk Score Tiers</span>
+      </h5>
+      <div class="table-responsive">
+        <table class="table table-dark table-sm mb-0">
+          <thead>
+            <tr class="text-muted small">
+              <th>Risk Tier</th>
+              <th>Probability Range</th>
+              <th>Recommended Enforcement</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="risk-badge critical">CRITICAL</span></td>
+              <td class="font-monospace">&ge; 80.0%</td>
+              <td class="small text-danger">Immediate automated block & freeze</td>
+            </tr>
+            <tr>
+              <td><span class="risk-badge high">HIGH</span></td>
+              <td class="font-monospace">50.0% – 79.9%</td>
+              <td class="small text-warning">Hold for manual SecOps review / OTP challenge</td>
+            </tr>
+            <tr>
+              <td><span class="risk-badge medium">MEDIUM</span></td>
+              <td class="font-monospace">20.0% – 49.9%</td>
+              <td class="small text-info">Step-up biometric verification</td>
+            </tr>
+            <tr>
+              <td><span class="risk-badge low">LOW</span></td>
+              <td class="font-monospace">&lt; 20.0%</td>
+              <td class="small text-success">Approve transaction immediately</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <!-- SECURITY POLICY CARD -->
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="shield" style="width: 20px; height: 20px; color: var(--emerald);"></i>
+        <span>Tenant Isolation Guarantees</span>
+      </h5>
+      <p class="text-muted small">
+        FraudGuard architecture enforces zero-trust customer partitioning:
+      </p>
+      <div class="d-flex flex-column gap-2 small text-muted">
+        <div class="p-2 rounded" style="background: var(--bg-card-elevated);">
+          <strong class="text-white">ORM Query Isolation:</strong> All customer queries enforce <code>user_id == current_user.id</code>.
+        </div>
+        <div class="p-2 rounded" style="background: var(--bg-card-elevated);">
+          <strong class="text-white">Export Confinement:</strong> CSV and PDF statements only stream records belonging to the caller.
+        </div>
+        <div class="p-2 rounded" style="background: var(--bg-card-elevated);">
+          <strong class="text-white">Admin RBAC Separation:</strong> Non-admin customers attempting to load administrative endpoints are blocked with HTTP 403 Forbidden.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  document.getElementById('btnSyncRates').addEventListener('click', async () => {
+    const icon = document.getElementById('syncRatesIcon');
+    const text = document.getElementById('syncRatesText');
+    const result = document.getElementById('syncRatesResult');
+
+    icon.classList.add('spin-animation');
+    text.textContent = 'Contacting Provider...';
+    result.textContent = '';
+
+    try {
+      const res = await fetch('{{ url_for("currency.get_exchange_rates") }}?force=true');
+      const data = await res.json();
+      if (data.status === 'success') {
+        result.className = 'small text-success';
+        result.textContent = `Successfully updated rates from ${data.provider}!`;
+      } else {
+        result.className = 'small text-warning';
+        result.textContent = `Sync completed with cached rates.`;
+      }
+    } catch (e) {
+      result.className = 'small text-danger';
+      result.textContent = `Sync failed.`;
+    } finally {
+      icon.classList.remove('spin-animation');
+      text.textContent = 'Trigger Live Exchange Rate Refresh';
+      if (window.lucide) lucide.createIcons();
+    }
+  });
+</script>
+<style>
+  .spin-animation {
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+</style>
+{% endblock %}
+

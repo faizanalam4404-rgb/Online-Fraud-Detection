@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+
+{% block title %}Settings – FraudGuard Customer Portal{% endblock %}
+{% block page_title %}Security Settings & Password{% endblock %}
+{% block page_subtitle %}Manage authentication credentials and personal security preferences{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-7">
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="key" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+        <span>Change Account Password</span>
+      </h5>
+
+      <form method="POST" action="{{ url_for('customer.settings_view') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+        <div class="mb-3">
+          <label for="current_password" class="form-label small fw-semibold text-light">Current Password *</label>
+          <input type="password" class="form-control bg-dark text-white border-secondary" id="current_password" name="current_password" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="new_password" class="form-label small fw-semibold text-light">New Password (Min. 6 chars) *</label>
+          <input type="password" class="form-control bg-dark text-white border-secondary" id="new_password" name="new_password" required>
+        </div>
+
+        <div class="mb-4">
+          <label for="confirm_password" class="form-label small fw-semibold text-light">Confirm New Password *</label>
+          <input type="password" class="form-control bg-dark text-white border-secondary" id="confirm_password" name="confirm_password" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary d-flex align-items-center gap-2">
+          <i data-lucide="shield-check" style="width: 16px; height: 16px;"></i>
+          <span>Update Password</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="sliders" style="width: 20px; height: 20px; color: var(--blue);"></i>
+        <span>Security Policies</span>
+      </h5>
+      <p class="text-muted small">
+        Passwords are encrypted using Werkzeug PBKDF2:SHA256 with cryptographic salting. Plaintext passwords are never stored in memory or databases.
+      </p>
+
+      <div class="d-flex flex-column gap-2 small text-muted">
+        <div class="d-flex align-items-center gap-2">
+          <i data-lucide="check" style="width: 16px; height: 16px; color: var(--emerald);"></i>
+          <span>Session Hijacking Protection Active</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <i data-lucide="check" style="width: 16px; height: 16px; color: var(--emerald);"></i>
+          <span>Cross-Site Request Forgery (CSRF) Guard</span>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <i data-lucide="check" style="width: 16px; height: 16px; color: var(--emerald);"></i>
+          <span>Cryptographic Hash Password Salting</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

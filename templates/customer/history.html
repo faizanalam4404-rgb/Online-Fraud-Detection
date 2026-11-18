@@ -1,0 +1,309 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History – FraudGuard Customer Portal{% endblock %}
+{% block page_title %}Personal Transaction Audit History{% endblock %}
+{% block page_subtitle %}Search, filter, inspect, and export your isolated payment records and model prediction telemetry{% endblock %}
+
+{% block content %}
+<!-- CONTROLS & EXPORT BAR -->
+<div class="card p-3 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="row g-2 align-items-center">
+    
+    <!-- SEARCH INPUT -->
+    <div class="col-12 col-md-4">
+      <div class="input-group input-group-sm">
+        <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="search" style="width: 14px; height: 14px;"></i></span>
+        <input type="text" class="form-control bg-dark text-white border-secondary" id="searchInput" placeholder="Search by UUID or Account...">
+      </div>
+    </div>
+
+    <!-- STATUS FILTER -->
+    <div class="col-6 col-md-2">
+      <select class="form-select form-select-sm bg-dark text-white border-secondary" id="statusFilter">
+        <option value="all">All Verdicts</option>
+        <option value="legitimate">Legitimate Only</option>
+        <option value="fraudulent">Fraudulent Only</option>
+      </select>
+    </div>
+
+    <!-- CURRENCY FILTER -->
+    <div class="col-6 col-md-2">
+      <select class="form-select form-select-sm bg-dark text-white border-secondary" id="currencyFilter">
+        <option value="all">All Currencies</option>
+        <option value="USD">USD ($)</option>
+        <option value="EUR">EUR (€)</option>
+        <option value="INR">INR (₹)</option>
+        <option value="GBP">GBP (£)</option>
+        <option value="JPY">JPY (¥)</option>
+        {% if currencies %}
+          {% for c in currencies %}
+            {% if c.code not in ['USD','EUR','INR','GBP','JPY'] %}
+              <option value="{{ c.code }}">{{ c.code }}</option>
+            {% endif %}
+          {% endfor %}
+        {% endif %}
+      </select>
+    </div>
+
+    <!-- RAIL TYPE FILTER -->
+    <div class="col-6 col-md-2">
+      <select class="form-select form-select-sm bg-dark text-white border-secondary" id="typeFilter">
+        <option value="all">All Rails</option>
+        <option value="PAYMENT">PAYMENT</option>
+        <option value="TRANSFER">TRANSFER</option>
+        <option value="CASH_OUT">CASH_OUT</option>
+        <option value="CASH_IN">CASH_IN</option>
+        <option value="DEBIT">DEBIT</option>
+      </select>
+    </div>
+
+    <!-- EXPORT BUTTONS -->
+    <div class="col-6 col-md-2 text-end d-flex gap-1 justify-content-end">
+      <button class="btn btn-sm btn-outline-info d-flex align-items-center gap-1" id="btnExportCsv" title="Export CSV">
+        <i data-lucide="file-spreadsheet" style="width: 14px; height: 14px;"></i>
+        <span>CSV</span>
+      </button>
+      <button class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1" id="btnExportPdf" title="Export PDF Statement">
+        <i data-lucide="file-text" style="width: 14px; height: 14px;"></i>
+        <span>PDF</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- TRANSACTIONS TABLE -->
+<div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="table-responsive">
+    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+      <thead>
+        <tr class="text-muted small text-uppercase">
+          <th>Ref UUID</th>
+          <th>Timestamp</th>
+          <th>Rail</th>
+          <th>Submitted Amount</th>
+          <th>USD Converted</th>
+          <th>Sender Account</th>
+          <th>Verdict</th>
+          <th>Risk Tier</th>
+          <th>Probability</th>
+          <th class="text-end">Action</th>
+        </tr>
+      </thead>
+      <tbody id="historyTbody">
+        <tr>
+          <td colspan="10" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div>
+            Loading isolated transactions...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION CONTROLS -->
+  <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary-subtle">
+    <div class="small text-muted" id="pageInfo">Showing 0 of 0 records</div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" id="btnPrevPage" disabled>Previous</button>
+      <button class="btn btn-sm btn-outline-secondary" id="btnNextPage" disabled>Next</button>
+    </div>
+  </div>
+</div>
+
+<!-- TRANSACTION DETAIL MODAL -->
+<div class="modal fade" id="historyDetailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="background: var(--bg-card); border: 1px solid var(--border-color); color: var(--text-main);">
+      <div class="modal-header border-secondary-subtle">
+        <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+          <i data-lucide="shield" style="width: 20px; height: 20px; color: var(--cyan);"></i>
+          <span>Transaction Security Inspection</span>
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="historyModalBody">
+        <!-- Injected via JavaScript -->
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let currentPage = 1;
+  let totalPages = 1;
+
+  async function loadHistory(page = 1) {
+    currentPage = page;
+    const search = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('statusFilter').value;
+    const currency = document.getElementById('currencyFilter').value;
+    const type = document.getElementById('typeFilter').value;
+
+    const params = new URLSearchParams({
+      page: currentPage,
+      per_page: 15,
+      search: search,
+      status: status,
+      currency: currency,
+      type: type
+    });
+
+    try {
+      const res = await fetch(`{{ url_for("customer.api_transactions") }}?${params.toString()}`);
+      const data = await res.json();
+      if (data.status !== 'success') return;
+
+      const tbody = document.getElementById('historyTbody');
+      tbody.innerHTML = '';
+
+      if (!data.transactions || data.transactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-4 text-muted">No matching transactions found in your account.</td></tr>`;
+        document.getElementById('pageInfo').textContent = 'Showing 0 records';
+        document.getElementById('btnPrevPage').disabled = true;
+        document.getElementById('btnNextPage').disabled = true;
+        return;
+      }
+
+      data.transactions.forEach(tx => {
+        const tr = document.createElement('tr');
+        const isFraud = tx.is_fraud === 1;
+        const verdictBadge = isFraud 
+          ? `<span class="badge bg-danger">FRAUDULENT</span>`
+          : `<span class="badge bg-success">LEGITIMATE</span>`;
+        const riskClass = (tx.risk_level || 'low').toLowerCase();
+
+        tr.innerHTML = `
+          <td class="font-monospace small text-info fw-semibold">${tx.trans_uuid}</td>
+          <td class="small text-muted">${tx.transaction_timestamp || tx.created_at}</td>
+          <td><span class="badge bg-secondary">${tx.transaction_type}</span></td>
+          <td class="fw-semibold font-monospace">${tx.formatted_amount || (tx.transaction_amount + ' ' + tx.currency_code)}</td>
+          <td class="small text-muted font-monospace">${tx.formatted_usd || ('$' + tx.amount_usd)}</td>
+          <td class="small font-monospace text-muted">${tx.sender_account || 'N/A'}</td>
+          <td>${verdictBadge}</td>
+          <td><span class="risk-badge ${riskClass}">${tx.risk_level || 'LOW'}</span></td>
+          <td class="font-monospace small">${(tx.fraud_probability * 100).toFixed(1)}%</td>
+          <td class="text-end">
+            <button class="btn btn-sm btn-outline-secondary py-0 px-2 btn-detail" data-txn='${JSON.stringify(tx).replace(/'/g, "&apos;")}'>
+              Inspect
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Pagination setup
+      totalPages = data.pagination.pages || 1;
+      document.getElementById('pageInfo').textContent = `Showing page ${data.pagination.page} of ${totalPages} (${data.pagination.total} total transactions)`;
+      document.getElementById('btnPrevPage').disabled = !data.pagination.has_prev;
+      document.getElementById('btnNextPage').disabled = !data.pagination.has_next;
+
+      // Detail buttons
+      document.querySelectorAll('.btn-detail').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const tx = JSON.parse(btn.getAttribute('data-txn'));
+          showTransactionModal(tx);
+        });
+      });
+
+      if (window.lucide) lucide.createIcons();
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  function showTransactionModal(tx) {
+    const isFraud = tx.is_fraud === 1;
+    const body = document.getElementById('historyModalBody');
+    const reasons = (tx.risk_reasons || []).map(r => `<li class="small mb-1 text-muted">${r}</li>`).join('');
+
+    body.innerHTML = `
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small text-muted">Reference UUID</div>
+            <div class="h6 font-monospace text-info mb-2">${tx.trans_uuid}</div>
+            <div class="small text-muted">Original Amount</div>
+            <div class="h5 font-monospace text-white">${tx.formatted_amount || tx.transaction_amount + ' ' + tx.currency_code}</div>
+            <div class="small text-muted mt-1">USD Normalized: <strong class="text-white">${tx.formatted_usd || '$' + tx.amount_usd}</strong></div>
+            <div class="small text-muted">Exchange Rate: 1 USD = ${tx.exchange_rate_used} ${tx.currency_code}</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small text-muted">Machine Learning Verdict</div>
+            <div class="h5 ${isFraud ? 'text-danger' : 'text-success'} fw-bold mb-1">${tx.prediction}</div>
+            <div class="small text-muted">Fraud Probability: <strong class="text-white font-monospace">${(tx.fraud_probability * 100).toFixed(2)}%</strong></div>
+            <div class="small text-muted">Risk Tier: <span class="risk-badge ${(tx.risk_level||'low').toLowerCase()}">${tx.risk_level}</span></div>
+            <div class="small text-muted mt-2">Model Pipeline: <strong>Random Forest v${tx.model_version || '1.0'}</strong></div>
+          </div>
+        </div>
+        <div class="col-12">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small fw-bold text-white mb-2">Account Reconciliation & Flow:</div>
+            <div class="row g-2 text-muted small font-monospace">
+              <div class="col-6">Sender: ${tx.sender_account || 'N/A'} (Old: ${tx.oldbalance_org}, New: ${tx.newbalance_orig})</div>
+              <div class="col-6">Recipient: ${tx.recipient_account || 'N/A'} (Old: ${tx.oldbalance_dest}, New: ${tx.newbalance_dest})</div>
+            </div>
+          </div>
+        </div>
+        ${reasons ? `
+        <div class="col-12">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated);">
+            <div class="small fw-bold text-white mb-2">Cybersecurity Audit Reasons:</div>
+            <ul class="ps-3 mb-0">${reasons}</ul>
+          </div>
+        </div>` : ''}
+      </div>
+    `;
+
+    const modal = new bootstrap.Modal(document.getElementById('historyDetailModal'));
+    modal.show();
+    if (window.lucide) lucide.createIcons();
+  }
+
+  // Filter triggers
+  ['searchInput', 'statusFilter', 'currencyFilter', 'typeFilter'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => loadHistory(1));
+    if (id === 'searchInput') {
+      document.getElementById(id).addEventListener('keyup', (e) => {
+        if (e.key === 'Enter') loadHistory(1);
+      });
+    }
+  });
+
+  document.getElementById('btnPrevPage').addEventListener('click', () => {
+    if (currentPage > 1) loadHistory(currentPage - 1);
+  });
+  document.getElementById('btnNextPage').addEventListener('click', () => {
+    if (currentPage < totalPages) loadHistory(currentPage + 1);
+  });
+
+  // Export handlers
+  function triggerExport(format) {
+    const search = document.getElementById('searchInput').value.trim();
+    const status = document.getElementById('statusFilter').value;
+    const currency = document.getElementById('currencyFilter').value;
+    const type = document.getElementById('typeFilter').value;
+
+    const params = new URLSearchParams({
+      format: format,
+      search: search,
+      status: status,
+      currency: currency,
+      type: type
+    });
+
+    window.location.href = `{{ url_for("customer.api_export_transactions") }}?${params.toString()}`;
+  }
+
+  document.getElementById('btnExportCsv').addEventListener('click', () => triggerExport('csv'));
+  document.getElementById('btnExportPdf').addEventListener('click', () => triggerExport('pdf'));
+
+  document.addEventListener('DOMContentLoaded', () => loadHistory(1));
+</script>
+{% endblock %}
+

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block title %}About FraudGuard – Platform Architecture & Compliance{% endblock %}
+{% block page_title %}About FraudGuard Platform{% endblock %}
+{% block page_subtitle %}Enterprise payment fraud detection architecture, isolation guarantees, and machine learning philosophy{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <div class="col-12 col-lg-8">
+    <div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h4 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="shield" style="width: 22px; height: 22px; color: var(--cyan);"></i>
+        <span>Mission & Architecture Overview</span>
+      </h4>
+      <p class="text-muted">
+        FraudGuard was engineered to bridge modern cybersecurity with machine learning intelligence for financial institutions, payment gateways, and individual customers worldwide. Our system evaluates online payment transactions in real-time, delivering immediate verdicts, calibrated fraud probabilities, and explainable risk factors.
+      </p>
+      <p class="text-muted">
+        Rather than treating payment risk as a black box, FraudGuard unpacks every transaction through multi-dimensional feature engineering: checking sender balance depletion continuity, destination mule account footprints, transfer corridor exposure, and temporal variance.
+      </p>
+
+      <h5 class="fw-bold text-white mt-4 mb-3">Core Engineering Principles</h5>
+      <div class="row g-3">
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated); border: 1px solid var(--border-color);">
+            <div class="fw-bold text-info mb-1"><i data-lucide="lock" style="width: 16px; height: 16px;"></i> Customer Isolation</div>
+            <div class="text-muted small">Strict multi-tenant customer isolation at the ORM query level. Customers cannot query, view, or infer other users' transactions.</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated); border: 1px solid var(--border-color);">
+            <div class="fw-bold text-success mb-1"><i data-lucide="globe" style="width: 16px; height: 16px;"></i> True Multi-Currency</div>
+            <div class="text-muted small">Never overwrite original payment currencies or amounts. Normalizes to base USD via real exchange rates for model inference while rendering in local currencies.</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated); border: 1px solid var(--border-color);">
+            <div class="fw-bold text-warning mb-1"><i data-lucide="cpu" style="width: 16px; height: 16px;"></i> Transparent MLOps</div>
+            <div class="text-muted small">Distinct separation between offline test benchmark scores (Random Forest 99.82% accuracy) and live streaming production telemetry.</div>
+          </div>
+        </div>
+        <div class="col-12 col-md-6">
+          <div class="p-3 rounded" style="background: var(--bg-card-elevated); border: 1px solid var(--border-color);">
+            <div class="fw-bold text-danger mb-1"><i data-lucide="file-text" style="width: 16px; height: 16px;"></i> Compliance & Export</div>
+            <div class="text-muted small">Export transaction histories to formatted CSV and official ReportLab PDF statements with cryptographic verification hashes.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-4">
+    <div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3">System Specifications</h5>
+      <ul class="list-unstyled text-muted small d-flex flex-column gap-2 mb-0">
+        <li class="d-flex justify-content-between border-bottom border-secondary-subtle pb-2">
+          <span>Backend Framework</span>
+          <strong class="text-white">Python 3.14 / Flask 3.1</strong>
+        </li>
+        <li class="d-flex justify-content-between border-bottom border-secondary-subtle pb-2">
+          <span>Database Engine</span>
+          <strong class="text-white">SQLite 3 (PostgreSQL Ready)</strong>
+        </li>
+        <li class="d-flex justify-content-between border-bottom border-secondary-subtle pb-2">
+          <span>ML Framework</span>
+          <strong class="text-white">Scikit-learn 1.9 & Polars</strong>
+        </li>
+        <li class="d-flex justify-content-between border-bottom border-secondary-subtle pb-2">
+          <span>Model Architecture</span>
+          <strong class="text-white">Random Forest (Balanced)</strong>
+        </li>
+        <li class="d-flex justify-content-between border-bottom border-secondary-subtle pb-2">
+          <span>PDF Statement Engine</span>
+          <strong class="text-white">ReportLab 5.1</strong>
+        </li>
+        <li class="d-flex justify-content-between pb-1">
+          <span>Currencies Supported</span>
+          <strong class="text-white">60+ ISO 4217 Currencies</strong>
+        </li>
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

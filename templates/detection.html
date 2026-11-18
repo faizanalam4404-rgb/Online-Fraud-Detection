@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+
+{% block title %}Fraud Detection – FraudGuard Online Protection{% endblock %}
+{% block page_title %}Real-Time Fraud Detection Engine{% endblock %}
+{% block page_subtitle %}Evaluate payment transactions through the trained Random Forest classifier pipeline{% endblock %}
+
+{% block content %}
+<div id="detection-view">
+  <!-- QUICK SIMULATION PRESETS BANNER -->
+  <div class="presets-banner">
+    <div class="presets-label">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+      </svg>
+      <span>Instant Scenario Presets:</span>
+    </div>
+    <div id="preset-buttons-container" class="preset-buttons">
+      <!-- Populated via JavaScript: Coffee, Salary, Takeover, Cashout -->
+    </div>
+  </div>
+
+  <!-- DETECTION FORM CARD -->
+  <div class="card">
+    <div class="card-header">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--cyan)" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/>
+          <line x1="12" y1="8" x2="12" y2="12"/>
+          <line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span>Enter Payment Transaction Parameters</span>
+      </h2>
+      <span style="font-size: 0.75rem; color: var(--text-dim);">Strict Preprocessing & Scaling Pipeline</span>
+    </div>
+
+    <div class="card-body">
+      <form id="detection-form" autocomplete="off">
+        <div class="form-grid">
+          <!-- 1. Transaction Type -->
+          <div class="form-group">
+            <label class="form-label" for="input-type">
+              <span>Transaction Type *</span>
+              <span class="helper">High risk: TRANSFER / CASH_OUT</span>
+            </label>
+            <select id="input-type" class="form-control" required>
+              <option value="PAYMENT">PAYMENT (Retail / Merchant)</option>
+              <option value="TRANSFER">TRANSFER (Peer-to-Peer / Wire)</option>
+              <option value="CASH_OUT">CASH_OUT (ATM / Withdrawal)</option>
+              <option value="CASH_IN">CASH_IN (Bank Deposit)</option>
+              <option value="DEBIT">DEBIT (Direct Debit)</option>
+            </select>
+          </div>
+
+          <!-- 2. Transaction Amount -->
+          <div class="form-group">
+            <label class="form-label" for="input-amount">
+              <span>Amount ($ USD) *</span>
+              <span class="helper">Must be > 0.00</span>
+            </label>
+            <input type="number" id="input-amount" class="form-control" step="0.01" min="0.01" placeholder="e.g. 2500.00" required>
+          </div>
+
+          <!-- 3. Sender Initial Balance -->
+          <div class="form-group">
+            <label class="form-label" for="input-oldbalanceOrg">
+              <span>Sender Balance Before *</span>
+              <span class="helper">oldbalanceOrg</span>
+            </label>
+            <input type="number" id="input-oldbalanceOrg" class="form-control" step="0.01" min="0.00" placeholder="e.g. 5000.00" required>
+          </div>
+
+          <!-- 4. Sender New Balance -->
+          <div class="form-group">
+            <label class="form-label" for="input-newbalanceOrig">
+              <span>Sender Balance After *</span>
+              <span class="helper">newbalanceOrig</span>
+            </label>
+            <input type="number" id="input-newbalanceOrig" class="form-control" step="0.01" min="0.00" placeholder="e.g. 2500.00" required>
+          </div>
+
+          <!-- 5. Recipient Initial Balance -->
+          <div class="form-group">
+            <label class="form-label" for="input-oldbalanceDest">
+              <span>Recipient Balance Before *</span>
+              <span class="helper">oldbalanceDest (0 for merchants)</span>
+            </label>
+            <input type="number" id="input-oldbalanceDest" class="form-control" step="0.01" min="0.00" placeholder="e.g. 0.00" required>
+          </div>
+
+          <!-- 6. Recipient New Balance -->
+          <div class="form-group">
+            <label class="form-label" for="input-newbalanceDest">
+              <span>Recipient Balance After *</span>
+              <span class="helper">newbalanceDest</span>
+            </label>
+            <input type="number" id="input-newbalanceDest" class="form-control" step="0.01" min="0.00" placeholder="e.g. 2500.00" required>
+          </div>
+
+          <!-- 7. Hour of Transaction -->
+          <div class="form-group">
+            <label class="form-label" for="input-hour">
+              <span>Hour of Day (0–23)</span>
+              <span class="helper">0 = Midnight, 12 = Noon</span>
+            </label>
+            <input type="number" id="input-hour" class="form-control" min="0" max="23" placeholder="12" value="14">
+          </div>
+
+          <!-- 8. Sender Identifier (Demonstration) -->
+          <div class="form-group">
+            <label class="form-label" for="input-sender">
+              <span>Sender Account ID</span>
+              <span class="helper">Demonstration alias</span>
+            </label>
+            <input type="text" id="input-sender" class="form-control" placeholder="CUST-491029">
+          </div>
+
+          <!-- 9. Recipient Identifier (Demonstration) -->
+          <div class="form-group">
+            <label class="form-label" for="input-recipient">
+              <span>Recipient Account ID</span>
+              <span class="helper">Demonstration alias</span>
+            </label>
+            <input type="text" id="input-recipient" class="form-control" placeholder="REC-882194">
+          </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem; border-top: 1px solid var(--border-color); padding-top: 1.25rem;">
+          <div style="font-size: 0.78rem; color: var(--text-dim); display: flex; align-items: center; gap: 0.5rem;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            <span>Input values undergo OneHotEncoding & StandardScaling inside trained Pipeline.</span>
+          </div>
+
+          <button type="submit" id="btn-analyze" class="btn btn-primary" style="min-width: 260px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span>Analyze Transaction with ML Engine</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- LOADING ANIMATION DURING INFERENCE -->
+  <div id="detection-loading" class="loading-indicator" style="display: none;">
+    <div class="radar-spinner"></div>
+    <div style="text-align: center;">
+      <h4 style="color: var(--text-main); font-size: 1.1rem; margin-bottom: 0.25rem;">Evaluating Transaction Safety</h4>
+      <p style="color: var(--text-muted); font-size: 0.85rem;">Calculating balance error variances and scoring against 100 Random Forest decision estimators...</p>
+    </div>
+  </div>
+
+  <!-- RESULT DISPLAY CONTAINER -->
+  <div id="detection-result-container" style="display: none;">
+    <!-- Populated dynamically via JavaScript upon prediction -->
+  </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,449 @@
+{% extends "base.html" %}
+
+{% block title %}Analyze Payment – FraudGuard Real-Time Defense{% endblock %}
+{% block page_title %}Real-Time Payment Fraud Analysis{% endblock %}
+{% block page_subtitle %}Submit online transaction parameters to the Scikit-learn Random Forest model pipeline for immediate risk scoring{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+  <!-- FORM COLUMN -->
+  <div class="col-12 col-xl-7">
+    <div class="card p-4 shadow-sm" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      
+      <!-- PRESET BUTTONS STRIP -->
+      <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 pb-3 border-bottom border-secondary-subtle">
+        <span class="small text-muted fw-semibold d-flex align-items-center gap-1">
+          <i data-lucide="sparkles" style="width: 14px; height: 14px; color: var(--cyan);"></i>
+          <span>Simulation Presets:</span>
+        </span>
+        <div class="d-flex flex-wrap gap-2">
+          <button type="button" class="btn btn-sm btn-outline-success preset-btn" id="presetLegit">
+            <span>Legitimate Payment</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-warning preset-btn" id="presetDrain">
+            <span>Account Drain (High Risk)</span>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-danger preset-btn" id="presetMule">
+            <span>Mule Cash-Out (Critical)</span>
+          </button>
+        </div>
+      </div>
+
+      <form id="predictionForm">
+        <div class="row g-3">
+          
+          <!-- TRANSACTION AMOUNT & CURRENCY -->
+          <div class="col-12 col-md-6">
+            <label for="amount" class="form-label small fw-semibold text-light">Transaction Amount *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-info fw-bold" id="currencySymbolPrefix">$</span>
+              <input type="number" step="any" min="0.01" class="form-control bg-dark text-white border-secondary" id="amount" name="amount" placeholder="e.g. 500.00" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="currency" class="form-label small fw-semibold text-light">Transaction Currency (ISO 4217) *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="globe" style="width: 16px; height: 16px;"></i></span>
+              <select class="form-select bg-dark text-white border-secondary" id="currency" name="currency" required>
+                <option value="USD" data-symbol="$" selected>USD – US Dollar ($)</option>
+                <option value="EUR" data-symbol="€">EUR – Euro (€)</option>
+                <option value="INR" data-symbol="₹">INR – Indian Rupee (₹)</option>
+                <option value="GBP" data-symbol="£">GBP – British Pound (£)</option>
+                <option value="JPY" data-symbol="¥">JPY – Japanese Yen (¥)</option>
+                <option value="CAD" data-symbol="CA$">CAD – Canadian Dollar (CA$)</option>
+                <option value="AUD" data-symbol="A$">AUD – Australian Dollar (A$)</option>
+                <option value="CHF" data-symbol="CHF">CHF – Swiss Franc (CHF)</option>
+                <option value="CNY" data-symbol="¥">CNY – Chinese Yuan (¥)</option>
+                <option value="AED" data-symbol="AED">AED – UAE Dirham (AED)</option>
+                <option value="SAR" data-symbol="SAR">SAR – Saudi Riyal (SAR)</option>
+                <option value="SGD" data-symbol="S$">SGD – Singapore Dollar (S$)</option>
+                <option value="BRL" data-symbol="R$">BRL – Brazilian Real (R$)</option>
+                <option value="ZAR" data-symbol="R">ZAR – South African Rand (R)</option>
+                {% if currencies %}
+                  {% for c in currencies %}
+                    {% if c.code not in ['USD','EUR','INR','GBP','JPY','CAD','AUD','CHF','CNY','AED','SAR','SGD','BRL','ZAR'] %}
+                      <option value="{{ c.code }}" data-symbol="{{ c.symbol }}">{{ c.code }} – {{ c.name }} ({{ c.symbol }})</option>
+                    {% endif %}
+                  {% endfor %}
+                {% endif %}
+              </select>
+            </div>
+            <div class="form-text text-muted" id="rateEstimateText" style="font-size: 0.72rem;">1 USD = 1.00 USD (Base Currency)</div>
+          </div>
+
+          <!-- PAYMENT RAIL / TYPE -->
+          <div class="col-12 col-md-6">
+            <label for="type" class="form-label small fw-semibold text-light">Payment Rail / Method *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="credit-card" style="width: 16px; height: 16px;"></i></span>
+              <select class="form-select bg-dark text-white border-secondary" id="type" name="type" required>
+                <option value="PAYMENT" selected>PAYMENT (Standard Merchant Purchase)</option>
+                <option value="TRANSFER">TRANSFER (Account-to-Account Wire Rail)</option>
+                <option value="CASH_OUT">CASH_OUT (ATM / Withdrawal Liquidate)</option>
+                <option value="CASH_IN">CASH_IN (Deposit funds to account)</option>
+                <option value="DEBIT">DEBIT (Direct debit processing)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- HOUR OF DAY -->
+          <div class="col-12 col-md-6">
+            <label for="hour_of_day" class="form-label small fw-semibold text-light">Hour of Day (0–23h UTC)</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="clock" style="width: 16px; height: 16px;"></i></span>
+              <input type="number" min="0" max="23" class="form-control bg-dark text-white border-secondary" id="hour_of_day" name="hour_of_day" value="14" required>
+            </div>
+          </div>
+
+          <!-- SENDER BALANCES -->
+          <div class="col-12 col-md-6">
+            <label for="oldbalanceOrg" class="form-label small fw-semibold text-light">Sender Balance (Before Transfer) *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="wallet" style="width: 16px; height: 16px;"></i></span>
+              <input type="number" step="any" min="0" class="form-control bg-dark text-white border-secondary" id="oldbalanceOrg" name="oldbalanceOrg" placeholder="e.g. 5000.00" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="newbalanceOrig" class="form-label small fw-semibold text-light">Sender Balance (After Transfer) *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="wallet-2" style="width: 16px; height: 16px;"></i></span>
+              <input type="number" step="any" min="0" class="form-control bg-dark text-white border-secondary" id="newbalanceOrig" name="newbalanceOrig" placeholder="e.g. 4500.00" required>
+            </div>
+          </div>
+
+          <!-- RECIPIENT BALANCES -->
+          <div class="col-12 col-md-6">
+            <label for="oldbalanceDest" class="form-label small fw-semibold text-light">Recipient Balance (Before) *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="arrow-down-left" style="width: 16px; height: 16px;"></i></span>
+              <input type="number" step="any" min="0" class="form-control bg-dark text-white border-secondary" id="oldbalanceDest" name="oldbalanceDest" placeholder="e.g. 1000.00" required>
+            </div>
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="newbalanceDest" class="form-label small fw-semibold text-light">Recipient Balance (After) *</label>
+            <div class="input-group">
+              <span class="input-group-text bg-dark border-secondary text-secondary"><i data-lucide="arrow-up-right" style="width: 16px; height: 16px;"></i></span>
+              <input type="number" step="any" min="0" class="form-control bg-dark text-white border-secondary" id="newbalanceDest" name="newbalanceDest" placeholder="e.g. 1500.00" required>
+            </div>
+          </div>
+
+          <!-- OPTIONAL ACCOUNTS -->
+          <div class="col-12 col-md-6">
+            <label for="sender_account" class="form-label small text-muted">Sender Account ID (Optional)</label>
+            <input type="text" class="form-control bg-dark text-white border-secondary" id="sender_account" name="sender_account" placeholder="e.g. C192847192">
+          </div>
+
+          <div class="col-12 col-md-6">
+            <label for="recipient_account" class="form-label small text-muted">Recipient / Merchant Account ID (Optional)</label>
+            <input type="text" class="form-control bg-dark text-white border-secondary" id="recipient_account" name="recipient_account" placeholder="e.g. M918274610">
+          </div>
+
+          <!-- SUBMIT BUTTON -->
+          <div class="col-12 mt-4">
+            <button type="submit" id="analyzeBtn" class="btn btn-primary w-100 py-2 fw-semibold d-flex align-items-center justify-content-center gap-2">
+              <i data-lucide="shield-check" id="btnIcon" style="width: 18px; height: 18px;"></i>
+              <span id="btnText">Analyze Transaction with Model</span>
+              <div class="spinner-border spinner-border-sm d-none" id="btnSpinner" role="status"></div>
+            </button>
+          </div>
+
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <!-- RESULT COLUMN -->
+  <div class="col-12 col-xl-5">
+    <div class="card p-4 h-100 shadow-sm" id="resultCard" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      
+      <!-- EMPTY STATE BEFORE EVALUATION -->
+      <div id="resultEmptyState" class="text-center py-5">
+        <div class="brand-logo-icon mx-auto mb-3" style="width: 64px; height: 64px; display: flex; align-items: center; justify-content: center; background: rgba(56, 189, 248, 0.1); border-radius: 16px; border: 1px solid var(--border-color);">
+          <i data-lucide="scan" style="width: 32px; height: 32px; color: var(--cyan);"></i>
+        </div>
+        <h5 class="fw-bold text-white mb-2">Awaiting Transaction Input</h5>
+        <p class="text-muted small px-3">
+          Enter payment parameters on the left or select a simulation preset to trigger live evaluation through our trained Machine Learning pipeline.
+        </p>
+      </div>
+
+      <!-- POPULATED PREDICTION RESULT -->
+      <div id="resultContent" class="d-none">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <span class="badge bg-secondary-subtle text-secondary small font-monospace" id="resUuid">TXN-00000000</span>
+          <span class="risk-badge" id="resRiskBadge">LOW</span>
+        </div>
+
+        <div class="p-4 rounded text-center mb-4" id="resVerdictBox" style="background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3);">
+          <div class="h2 fw-bold mb-1" id="resVerdictText" style="color: var(--emerald);">LEGITIMATE</div>
+          <div class="small text-muted" id="resVerdictSub">Transaction cleared through anti-fraud pipeline</div>
+        </div>
+
+        <!-- FRAUD PROBABILITY GAUGE -->
+        <div class="mb-4">
+          <div class="d-flex justify-content-between align-items-center mb-1">
+            <span class="small fw-semibold text-light">Fraud Probability</span>
+            <span class="small font-monospace fw-bold text-white" id="resProbText">0.0%</span>
+          </div>
+          <div class="progress" style="height: 10px; background: var(--bg-card-elevated);">
+            <div class="progress-bar" id="resProgressBar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          </div>
+        </div>
+
+        <!-- TRANSACTION SUMMARY BREAKDOWN -->
+        <div class="p-3 rounded mb-3" style="background: var(--bg-card-elevated); border: 1px solid var(--border-color);">
+          <div class="row g-2 small text-muted">
+            <div class="col-6">Submitted Amount:</div>
+            <div class="col-6 text-end font-monospace text-white fw-bold" id="resSubmittedAmt">--</div>
+            <div class="col-6">USD Equivalence:</div>
+            <div class="col-6 text-end font-monospace text-info" id="resUsdAmt">--</div>
+            <div class="col-6">Exchange Rate:</div>
+            <div class="col-6 text-end font-monospace text-muted" id="resRateUsed">--</div>
+            <div class="col-6">Payment Rail:</div>
+            <div class="col-6 text-end text-white" id="resType">--</div>
+          </div>
+        </div>
+
+        <!-- CYBERSECURITY AUDIT REASONS -->
+        <div class="mb-4">
+          <div class="small fw-semibold text-light mb-2 d-flex align-items-center gap-1">
+            <i data-lucide="check-circle-2" style="width: 14px; height: 14px; color: var(--cyan);"></i>
+            <span>Cybersecurity Analysis Factors:</span>
+          </div>
+          <ul class="ps-3 mb-0" id="resReasonsList" style="font-size: 0.8rem; color: var(--text-muted);">
+            <!-- List items injected -->
+          </ul>
+        </div>
+
+        <div class="d-flex gap-2">
+          <a href="{{ url_for('customer.history_view') }}" class="btn btn-outline-info w-100 btn-sm d-flex align-items-center justify-content-center gap-1">
+            <i data-lucide="history" style="width: 14px; height: 14px;"></i>
+            <span>View in Transaction History</span>
+          </a>
+          <button type="button" class="btn btn-secondary btn-sm" id="btnResetForm">
+            <span>Reset</span>
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  // Simulation presets data
+  const presets = {
+    legit: {
+      amount: 120.00,
+      currency: 'USD',
+      type: 'PAYMENT',
+      hour_of_day: 14,
+      oldbalanceOrg: 3500.00,
+      newbalanceOrig: 3380.00,
+      oldbalanceDest: 500.00,
+      newbalanceDest: 620.00,
+      sender_account: 'C10928374',
+      recipient_account: 'M92837461'
+    },
+    drain: {
+      amount: 85000.00,
+      currency: 'EUR',
+      type: 'TRANSFER',
+      hour_of_day: 3,
+      oldbalanceOrg: 85000.00,
+      newbalanceOrig: 0.00,
+      oldbalanceDest: 0.00,
+      newbalanceDest: 85000.00,
+      sender_account: 'C82736451',
+      recipient_account: 'C99182736'
+    },
+    mule: {
+      amount: 350000.00,
+      currency: 'INR',
+      type: 'CASH_OUT',
+      hour_of_day: 2,
+      oldbalanceOrg: 350000.00,
+      newbalanceOrig: 0.00,
+      oldbalanceDest: 0.00,
+      newbalanceDest: 0.00,
+      sender_account: 'C12389471',
+      recipient_account: 'M00000000'
+    }
+  };
+
+  function applyPreset(data) {
+    document.getElementById('amount').value = data.amount;
+    document.getElementById('currency').value = data.currency;
+    document.getElementById('type').value = data.type;
+    document.getElementById('hour_of_day').value = data.hour_of_day;
+    document.getElementById('oldbalanceOrg').value = data.oldbalanceOrg;
+    document.getElementById('newbalanceOrig').value = data.newbalanceOrig;
+    document.getElementById('oldbalanceDest').value = data.oldbalanceDest;
+    document.getElementById('newbalanceDest').value = data.newbalanceDest;
+    document.getElementById('sender_account').value = data.sender_account;
+    document.getElementById('recipient_account').value = data.recipient_account;
+    updateCurrencyPrefix();
+  }
+
+  document.getElementById('presetLegit').addEventListener('click', () => applyPreset(presets.legit));
+  document.getElementById('presetDrain').addEventListener('click', () => applyPreset(presets.drain));
+  document.getElementById('presetMule').addEventListener('click', () => applyPreset(presets.mule));
+
+  // Currency prefix updates
+  const currencySelect = document.getElementById('currency');
+  const currencyPrefix = document.getElementById('currencySymbolPrefix');
+  const rateEstimateText = document.getElementById('rateEstimateText');
+
+  function updateCurrencyPrefix() {
+    const opt = currencySelect.options[currencySelect.selectedIndex];
+    const symbol = opt ? opt.getAttribute('data-symbol') || '$' : '$';
+    currencyPrefix.textContent = symbol;
+    const code = currencySelect.value;
+    if (code === 'USD') {
+      rateEstimateText.textContent = '1 USD = 1.00 USD (Base Reference)';
+    } else {
+      rateEstimateText.textContent = `Auto-converting ${code} to base USD via live exchange rates.`;
+    }
+  }
+
+  currencySelect.addEventListener('change', updateCurrencyPrefix);
+
+  // Form Submission
+  const form = document.getElementById('predictionForm');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+  const btnIcon = document.getElementById('btnIcon');
+  const btnText = document.getElementById('btnText');
+  const btnSpinner = document.getElementById('btnSpinner');
+
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    // UI Loading state
+    analyzeBtn.disabled = true;
+    btnSpinner.classList.remove('d-none');
+    btnIcon.classList.add('d-none');
+    btnText.textContent = 'Scoring in ML Pipeline...';
+
+    const payload = {
+      amount: parseFloat(document.getElementById('amount').value),
+      currency: document.getElementById('currency').value,
+      type: document.getElementById('type').value,
+      hour_of_day: parseInt(document.getElementById('hour_of_day').value) || 12,
+      oldbalanceOrg: parseFloat(document.getElementById('oldbalanceOrg').value),
+      newbalanceOrig: parseFloat(document.getElementById('newbalanceOrig').value),
+      oldbalanceDest: parseFloat(document.getElementById('oldbalanceDest').value),
+      newbalanceDest: parseFloat(document.getElementById('newbalanceDest').value),
+      sender_account: document.getElementById('sender_account').value.trim() || undefined,
+      recipient_account: document.getElementById('recipient_account').value.trim() || undefined
+    };
+
+    try {
+      const res = await fetch('{{ url_for("customer.api_predict_transaction") }}', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const resData = await res.json();
+
+      if (res.ok && resData.status === 'success') {
+        renderPredictionResult(resData.data);
+      } else {
+        alert(resData.message || 'Error evaluating transaction.');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network or server exception during fraud evaluation.');
+    } finally {
+      analyzeBtn.disabled = false;
+      btnSpinner.classList.add('d-none');
+      btnIcon.classList.remove('d-none');
+      btnText.textContent = 'Analyze Transaction with Model';
+      if (window.lucide) lucide.createIcons();
+    }
+  });
+
+  function renderPredictionResult(data) {
+    document.getElementById('resultEmptyState').classList.add('d-none');
+    const content = document.getElementById('resultContent');
+    content.classList.remove('d-none');
+
+    document.getElementById('resUuid').textContent = data.trans_uuid;
+    const isFraud = data.is_fraud === 1;
+
+    // Verdict box
+    const verdictBox = document.getElementById('resVerdictBox');
+    const verdictText = document.getElementById('resVerdictText');
+    const verdictSub = document.getElementById('resVerdictSub');
+
+    if (isFraud) {
+      verdictBox.style.background = 'rgba(244, 63, 94, 0.15)';
+      verdictBox.style.borderColor = 'rgba(244, 63, 94, 0.4)';
+      verdictText.textContent = 'FRAUDULENT';
+      verdictText.style.color = 'var(--rose)';
+      verdictSub.textContent = 'High probability of fraudulent activity or laundering detected';
+    } else {
+      verdictBox.style.background = 'rgba(16, 185, 129, 0.15)';
+      verdictBox.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+      verdictText.textContent = 'LEGITIMATE';
+      verdictText.style.color = 'var(--emerald)';
+      verdictSub.textContent = 'Transaction exhibits standard reconciliation and cleared checks';
+    }
+
+    // Risk badge
+    const badge = document.getElementById('resRiskBadge');
+    badge.className = 'risk-badge ' + (data.risk_level || 'low').toLowerCase();
+    badge.textContent = data.risk_level || 'LOW';
+
+    // Probability progress bar
+    const pct = (data.fraud_probability * 100).toFixed(1);
+    document.getElementById('resProbText').textContent = pct + '%';
+    const pBar = document.getElementById('resProgressBar');
+    pBar.style.width = pct + '%';
+    if (data.fraud_probability >= 0.8) {
+      pBar.className = 'progress-bar bg-danger';
+    } else if (data.fraud_probability >= 0.5) {
+      pBar.className = 'progress-bar bg-warning';
+    } else if (data.fraud_probability >= 0.2) {
+      pBar.className = 'progress-bar bg-info';
+    } else {
+      pBar.className = 'progress-bar bg-success';
+    }
+
+    // Breakdown
+    document.getElementById('resSubmittedAmt').textContent = data.formatted_amount || (data.transaction_amount + ' ' + data.currency_code);
+    document.getElementById('resUsdAmt').textContent = data.formatted_usd || ('$' + data.amount_usd);
+    document.getElementById('resRateUsed').textContent = `1 USD = ${data.exchange_rate_used} ${data.currency_code}`;
+    document.getElementById('resType').textContent = data.transaction_type;
+
+    // Reasons list
+    const reasonsList = document.getElementById('resReasonsList');
+    reasonsList.innerHTML = '';
+    (data.risk_reasons || []).forEach(r => {
+      const li = document.createElement('li');
+      li.className = 'mb-1';
+      li.textContent = r;
+      reasonsList.appendChild(li);
+    });
+
+    if (window.lucide) lucide.createIcons();
+  }
+
+  document.getElementById('btnResetForm').addEventListener('click', () => {
+    form.reset();
+    updateCurrencyPrefix();
+    document.getElementById('resultContent').classList.add('d-none');
+    document.getElementById('resultEmptyState').classList.remove('d-none');
+  });
+
+  document.addEventListener('DOMContentLoaded', updateCurrencyPrefix);
+</script>
+{% endblock %}
+

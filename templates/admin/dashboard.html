@@ -1,0 +1,231 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard – FraudGuard Security Operations{% endblock %}
+{% block page_title %}Security Operations Center (SOC){% endblock %}
+{% block page_subtitle %}Platform-wide transaction monitoring, fraud detection telemetry, and multi-tenant customer management{% endblock %}
+
+{% block content %}
+<!-- ADMIN STATS GRID -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card blue p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Active Customers</span>
+        <i data-lucide="users" style="width: 18px; height: 18px; color: var(--blue);"></i>
+      </div>
+      <div class="h3 fw-bold text-white mb-0 font-monospace" id="adm-kpi-users">--</div>
+      <div class="small text-muted mt-1">Multi-tenant customer partitions</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card cyan p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Total Payments Monitored</span>
+        <i data-lucide="activity" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+      </div>
+      <div class="h3 fw-bold text-white mb-0 font-monospace" id="adm-kpi-total">--</div>
+      <div class="small text-muted mt-1" id="adm-kpi-vol">USD Volume: --</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card rose p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Fraudulent Intercepted</span>
+        <i data-lucide="shield-alert" style="width: 18px; height: 18px; color: var(--rose);"></i>
+      </div>
+      <div class="h3 fw-bold text-danger mb-0 font-monospace" id="adm-kpi-fraud" style="color: var(--rose);">--</div>
+      <div class="small text-muted mt-1">Blocked or quarantined</div>
+    </div>
+  </div>
+
+  <div class="col-12 col-sm-6 col-xl-3">
+    <div class="stat-card emerald p-3 rounded" style="background: var(--bg-card); border: 1px solid var(--border-color);">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <span class="text-muted small text-uppercase fw-semibold">Interception Rate</span>
+        <i data-lucide="percent" style="width: 18px; height: 18px; color: var(--emerald);"></i>
+      </div>
+      <div class="h3 fw-bold text-success mb-0 font-monospace" id="adm-kpi-rate" style="color: var(--emerald);">--%</div>
+      <div class="small text-muted mt-1">Global platform detection</div>
+    </div>
+  </div>
+</div>
+
+<!-- CHARTS ROW -->
+<div class="row g-4 mb-4">
+  <div class="col-12 col-lg-7">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="bar-chart" style="width: 18px; height: 18px; color: var(--blue);"></i>
+        <span>Platform Payment Rails & Fraud Ratio</span>
+      </h5>
+      <div style="position: relative; height: 260px;">
+        <canvas id="admRailChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-lg-5">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <h5 class="fw-bold text-white mb-3 d-flex align-items-center gap-2">
+        <i data-lucide="pie-chart" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+        <span>Global Verdict Ratio</span>
+      </h5>
+      <div style="position: relative; height: 260px;">
+        <canvas id="admRatioChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REAL-TIME GLOBAL AUDIT STREAM TABLE -->
+<div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+      <i data-lucide="shield" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+      <span>Live Platform Transaction Stream</span>
+    </h5>
+    <a href="{{ url_for('admin.transactions_view') }}" class="btn btn-sm btn-outline-info">Full Global Audit Log</a>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+      <thead>
+        <tr class="text-muted small text-uppercase">
+          <th>Ref UUID</th>
+          <th>Customer</th>
+          <th>Timestamp</th>
+          <th>Rail</th>
+          <th>Original Amount</th>
+          <th>USD Normalized</th>
+          <th>Verdict</th>
+          <th>Risk Tier</th>
+          <th>Fraud Prob</th>
+        </tr>
+      </thead>
+      <tbody id="admRecentTbody">
+        <tr>
+          <td colspan="9" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div>
+            Loading platform transactions...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let admRailChartInstance = null;
+  let admRatioChartInstance = null;
+
+  async function loadAdminDashboard() {
+    try {
+      const res = await fetch('{{ url_for("admin.api_dashboard") }}');
+      const data = await res.json();
+      if (data.status !== 'success') return;
+
+      const pStats = data.platform_stats || {};
+      document.getElementById('adm-kpi-users').textContent = (pStats.total_customers || 0).toLocaleString();
+      document.getElementById('adm-kpi-total').textContent = (pStats.total_transactions || 0).toLocaleString();
+      document.getElementById('adm-kpi-fraud').textContent = (pStats.fraud_count || 0).toLocaleString();
+      document.getElementById('adm-kpi-rate').textContent = (pStats.fraud_percentage || 0) + '%';
+      document.getElementById('adm-kpi-vol').textContent = 'USD: $' + (pStats.total_volume_usd || 0).toLocaleString(undefined, {minimumFractionDigits: 2});
+
+      // Ratio Chart
+      const ratioCtx = document.getElementById('admRatioChart').getContext('2d');
+      if (admRatioChartInstance) admRatioChartInstance.destroy();
+      admRatioChartInstance = new Chart(ratioCtx, {
+        type: 'doughnut',
+        data: {
+          labels: ['Legitimate', 'Fraudulent'],
+          datasets: [{
+            data: [pStats.legitimate_count || 0, pStats.fraud_count || 0],
+            backgroundColor: ['#10b981', '#f43f5e'],
+            borderColor: 'var(--bg-card)',
+            borderWidth: 2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // Rail Bar Chart
+      const chStats = data.channel_stats || {};
+      const chLabels = Object.keys(chStats);
+      const chLegit = chLabels.map(k => chStats[k].legitimate || 0);
+      const chFraud = chLabels.map(k => chStats[k].fraud || 0);
+
+      const railCtx = document.getElementById('admRailChart').getContext('2d');
+      if (admRailChartInstance) admRailChartInstance.destroy();
+      admRailChartInstance = new Chart(railCtx, {
+        type: 'bar',
+        data: {
+          labels: chLabels.length ? chLabels : ['PAYMENT', 'TRANSFER', 'CASH_OUT'],
+          datasets: [
+            { label: 'Legitimate', data: chLegit, backgroundColor: '#10b981' },
+            { label: 'Fraudulent', data: chFraud, backgroundColor: '#f43f5e' }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: { stacked: true, ticks: { color: '#94a3b8' } },
+            y: { stacked: true, ticks: { color: '#94a3b8', stepSize: 1 } }
+          },
+          plugins: {
+            legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+          }
+        }
+      });
+
+      // Populate Table
+      const tbody = document.getElementById('admRecentTbody');
+      tbody.innerHTML = '';
+      if (!data.recent_transactions || data.recent_transactions.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">No transactions recorded on platform.</td></tr>`;
+        return;
+      }
+
+      data.recent_transactions.forEach(tx => {
+        const tr = document.createElement('tr');
+        const isFraud = tx.is_fraud === 1;
+        const verdictBadge = isFraud 
+          ? `<span class="badge bg-danger">FRAUDULENT</span>`
+          : `<span class="badge bg-success">LEGITIMATE</span>`;
+        const riskClass = (tx.risk_level || 'low').toLowerCase();
+
+        tr.innerHTML = `
+          <td class="font-monospace small text-info fw-semibold">${tx.trans_uuid}</td>
+          <td class="small text-white">${tx.customer_name || tx.customer_username || 'Customer'}</td>
+          <td class="small text-muted">${tx.transaction_timestamp || tx.created_at}</td>
+          <td><span class="badge bg-secondary">${tx.transaction_type}</span></td>
+          <td class="fw-semibold font-monospace">${tx.formatted_amount || (tx.transaction_amount + ' ' + tx.currency_code)}</td>
+          <td class="small text-muted font-monospace">${tx.formatted_usd || ('$' + tx.amount_usd)}</td>
+          <td>${verdictBadge}</td>
+          <td><span class="risk-badge ${riskClass}">${tx.risk_level || 'LOW'}</span></td>
+          <td class="font-monospace small">${(tx.fraud_probability * 100).toFixed(1)}%</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if (window.lucide) lucide.createIcons();
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', loadAdminDashboard);
+</script>
+{% endblock %}
+

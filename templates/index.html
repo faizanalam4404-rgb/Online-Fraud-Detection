@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+
+{% block title %}FraudGuard – Global Online Payment Fraud Detection & Multi-Currency Defense{% endblock %}
+{% block page_title %}FraudGuard Global Defense{% endblock %}
+{% block page_subtitle %}Enterprise payment fraud detection, ISO 4217 multi-currency normalization, and machine learning risk intelligence{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+<div class="hero-box text-center py-5">
+  <div class="d-inline-flex align-items-center gap-2 px-3 py-1 mb-3 rounded-pill" style="background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.25); color: var(--cyan); font-size: 0.8rem; font-weight: 600;">
+    <span class="live-dot"></span>
+    <span>Scikit-learn Random Forest Model Active · 99.82% Test Accuracy</span>
+  </div>
+  <h1 class="display-4 fw-bold text-white mb-3" style="max-width: 850px; margin: 0 auto; letter-spacing: -0.02em;">
+    Online Payment Fraud Detection & Global Multi-Currency Risk Shield
+  </h1>
+  <p class="lead text-muted mb-4" style="max-width: 720px; margin: 0 auto; font-size: 1.1rem;">
+    Protect payments across 60+ world currencies. Isolated customer portals, instant fraud scoring, balance discrepancy reconciliation, and comprehensive MLOps governance.
+  </p>
+
+  <div class="d-flex flex-wrap justify-content-center gap-3">
+    {% if current_user.is_authenticated %}
+      {% if current_user.is_admin() %}
+        <a href="{{ url_for('admin.dashboard_view') }}" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2">
+          <i data-lucide="layout-dashboard"></i>
+          <span>Open Administrator Portal</span>
+        </a>
+      {% else %}
+        <a href="{{ url_for('customer.dashboard_view') }}" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2">
+          <i data-lucide="home"></i>
+          <span>Open My Customer Portal</span>
+        </a>
+        <a href="{{ url_for('customer.detection_view') }}" class="btn btn-outline-info px-4 py-2 d-flex align-items-center gap-2">
+          <i data-lucide="scan-line"></i>
+          <span>Analyze Payment Now</span>
+        </a>
+      {% endif %}
+    {% else %}
+      <a href="{{ url_for('auth.login_view') }}" class="btn btn-primary px-4 py-2 d-flex align-items-center gap-2">
+        <i data-lucide="log-in"></i>
+        <span>Sign In to Your Portal</span>
+      </a>
+      <a href="{{ url_for('auth.register_view') }}" class="btn btn-outline-light px-4 py-2 d-flex align-items-center gap-2">
+        <i data-lucide="user-plus"></i>
+        <span>Register Free Customer Account</span>
+      </a>
+      <a href="{{ url_for('api.how_it_works_page') }}" class="btn btn-dark px-3 py-2 text-muted d-flex align-items-center gap-2" style="border: 1px solid var(--border-color);">
+        <i data-lucide="info"></i>
+        <span>How Detection Works</span>
+      </a>
+    {% endif %}
+  </div>
+</div>
+
+<!-- KEY METRICS COUNTER STRIP -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="text-info fw-bold display-6 mb-1" style="font-family: var(--font-mono);">99.82%</div>
+      <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Model Accuracy</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="text-success fw-bold display-6 mb-1" style="font-family: var(--font-mono);">98.52%</div>
+      <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Fraud Recall Rate</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="text-warning fw-bold display-6 mb-1" style="font-family: var(--font-mono);">60+</div>
+      <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em;">World Currencies</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="card p-3 text-center" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="text-danger fw-bold display-6 mb-1" style="font-family: var(--font-mono);">&lt; 35ms</div>
+      <div class="text-muted small text-uppercase fw-semibold" style="letter-spacing: 0.05em;">Live Inference Latency</div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURE PILLARS -->
+<div class="row g-4 mb-5">
+  <div class="col-12 col-md-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(14, 165, 233, 0.15); color: var(--cyan); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="cpu" style="width: 22px; height: 22px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Trained ML Pipeline</h5>
+      <p class="text-muted small mb-3">
+        Powered by a Scikit-learn Random Forest model trained on millions of financial transactions. Employs origin drain ratio, destination mule tracing, and corridor classification.
+      </p>
+      <a href="{{ url_for('api.how_it_works_page') }}" class="small text-info text-decoration-none fw-semibold d-inline-flex align-items-center gap-1">
+        <span>Explore Pipeline Math</span>
+        <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="lock" style="width: 22px; height: 22px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Strict Customer Isolation</h5>
+      <p class="text-muted small mb-3">
+        Multi-tenant database architecture where every customer only sees their own transactions, analytics, and statements. Cross-tenant leakage is strictly blocked at the ORM layer.
+      </p>
+      <a href="{{ url_for('api.features_page') }}" class="small text-emerald text-decoration-none fw-semibold d-inline-flex align-items-center gap-1" style="color: var(--emerald);">
+        <span>Security Isolation Specs</span>
+        <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+      </a>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(245, 158, 11, 0.15); color: var(--amber); width: 42px; height: 42px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="globe" style="width: 22px; height: 22px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Global Multi-Currency Engine</h5>
+      <p class="text-muted small mb-3">
+        Full ISO 4217 support for 60+ world currencies (USD, INR, EUR, GBP, JPY, AED, CAD, SGD, etc.). Live exchange rate conversion to base USD with zero-decimal precision handling.
+      </p>
+      <a href="{{ url_for('api.features_page') }}" class="small text-warning text-decoration-none fw-semibold d-inline-flex align-items-center gap-1">
+        <span>Supported Currencies</span>
+        <i data-lucide="arrow-right" style="width: 14px; height: 14px;"></i>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- WORLD CURRENCY TICKER PREVIEW -->
+<div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+      <i data-lucide="coins" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+      <span>Active ISO 4217 Global Currencies</span>
+    </h5>
+    <span class="badge bg-secondary-subtle text-secondary small">Live Exchange Rates Cached</span>
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% for c in currencies[:18] %}
+      <div class="currency-pill" title="{{ c.name }}">
+        <span class="text-white">{{ c.symbol }}</span>
+        <span>{{ c.code }}</span>
+      </div>
+    {% endfor %}
+    <span class="text-muted small align-self-center ps-2">+ 40 more global currencies</span>
+  </div>
+</div>
+{% endblock %}
+

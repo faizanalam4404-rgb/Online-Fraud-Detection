@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block title %}Security Features – FraudGuard Online Payment Shield{% endblock %}
+{% block page_title %}Platform Capabilities & Security Features{% endblock %}
+{% block page_subtitle %}Comprehensive breakdown of fraud detection heuristics, currency handling, and administrative controls{% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(14, 165, 233, 0.15); color: var(--cyan); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="scan-line" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Real-Time Risk Scoring</h5>
+      <p class="text-muted small">
+        Evaluates payments in milliseconds. Outputs calibrated probabilities [0.0 - 1.0] and categorizes transactions into four clear risk tiers: LOW, MEDIUM, HIGH, and CRITICAL.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(16, 185, 129, 0.15); color: var(--emerald); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="coins" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Global Currency Normalization</h5>
+      <p class="text-muted small">
+        Accepts any of 60+ ISO 4217 world currencies. Automatically queries live or cached exchange rates to normalize transaction amounts to USD for model scoring while preserving the original currency in records.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(244, 63, 94, 0.15); color: var(--rose); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="shield-alert" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Discrepancy Analysis</h5>
+      <p class="text-muted small">
+        Flags transactions where sender balance is not reduced by the exact payment amount, or destination balance fails standard banking reconciliation math.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(245, 158, 11, 0.15); color: var(--amber); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="user-check" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Customer Isolation</h5>
+      <p class="text-muted small">
+        Strict multi-tenancy ensures every user only has visibility over their own payment records. Administrative users access aggregate platform metrics and customer management tools.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(139, 92, 246, 0.15); color: var(--purple); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="file-down" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">CSV & PDF Statement Export</h5>
+      <p class="text-muted small">
+        Generate professional audit statements in PDF format (using ReportLab) or export raw transaction data to CSV for corporate compliance and dispute management.
+      </p>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-6 col-lg-4">
+    <div class="card p-4 h-100" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+      <div class="brand-logo-icon mb-3" style="background: rgba(6, 182, 212, 0.15); color: var(--cyan); width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px;">
+        <i data-lucide="sun-moon" style="width: 24px; height: 24px;"></i>
+      </div>
+      <h5 class="fw-bold text-white mb-2">Dark / Light Visual Mode</h5>
+      <p class="text-muted small">
+        Switch dynamically between an immersive cybersecurity dark theme and a high-contrast corporate light theme with instant persistence across your device.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

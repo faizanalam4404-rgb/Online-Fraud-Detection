@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail – FraudGuard Admin Security{% endblock %}
+{% block page_title %}Platform Immutable Security Audit Trail{% endblock %}
+{% block page_subtitle %}Tamper-evident logs of administrative actions, customer status toggles, model evaluations, and access events{% endblock %}
+
+{% block content %}
+<div class="card p-4 mb-4" style="background: var(--bg-card); border: 1px solid var(--border-color); border-radius: var(--radius-md);">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="fw-bold text-white mb-0 d-flex align-items-center gap-2">
+      <i data-lucide="scroll-text" style="width: 18px; height: 18px; color: var(--cyan);"></i>
+      <span>Security Event Records</span>
+    </h5>
+    <span class="text-muted small" id="auditTotalLabel">Loading audit logs...</span>
+  </div>
+
+  <div class="table-responsive">
+    <table class="table table-dark table-hover mb-0" style="background: transparent;">
+      <thead>
+        <tr class="text-muted small text-uppercase">
+          <th>ID</th>
+          <th>Timestamp</th>
+          <th>Actor ID</th>
+          <th>Action</th>
+          <th>Resource Type</th>
+          <th>Resource ID</th>
+          <th>IP Address</th>
+          <th>Event Description</th>
+        </tr>
+      </thead>
+      <tbody id="auditTbody">
+        <tr>
+          <td colspan="8" class="text-center py-4 text-muted">
+            <div class="spinner-border spinner-border-sm text-info me-2" role="status"></div>
+            Loading audit records...
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- PAGINATION -->
+  <div class="d-flex justify-content-between align-items-center mt-3 pt-3 border-top border-secondary-subtle">
+    <div class="small text-muted" id="auditPageInfo">Showing page 1</div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-sm btn-outline-secondary" id="btnAuditPrev" disabled>Previous</button>
+      <button class="btn btn-sm btn-outline-secondary" id="btnAuditNext" disabled>Next</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  let auditPage = 1;
+  let auditPages = 1;
+
+  async function loadAuditLogs(page = 1) {
+    auditPage = page;
+    try {
+      const res = await fetch(`{{ url_for("admin.api_audit_logs") }}?page=${auditPage}&per_page=25`);
+      const json = await res.json();
+      if (json.status !== 'success') return;
+
+      const data = json.data;
+      const tbody = document.getElementById('auditTbody');
+      tbody.innerHTML = '';
+
+      document.getElementById('auditTotalLabel').textContent = `${data.total} recorded events`;
+
+      if (!data.logs || data.logs.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-4 text-muted">No audit events logged yet.</td></tr>`;
+        document.getElementById('auditPageInfo').textContent = 'Showing 0 records';
+        document.getElementById('btnAuditPrev').disabled = true;
+        document.getElementById('btnAuditNext').disabled = true;
+        return;
+      }
+
+      data.logs.forEach(log => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="font-monospace text-muted small">#${log.id}</td>
+          <td class="small text-muted font-monospace">${log.timestamp}</td>
+          <td class="small font-monospace text-info">${log.user_id ? 'User #' + log.user_id : 'System'}</td>
+          <td><span class="badge bg-secondary font-monospace" style="font-size: 0.7rem;">${log.action}</span></td>
+          <td class="small text-muted font-monospace">${log.resource_type || '-'}</td>
+          <td class="small text-muted font-monospace">${log.resource_id || '-'}</td>
+          <td class="small text-muted font-monospace">${log.ip_address || '127.0.0.1'}</td>
+          <td class="small text-white">${log.details || ''}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      auditPages = data.pages || 1;
+      document.getElementById('auditPageInfo').textContent = `Showing page ${data.page} of ${auditPages} (${data.total} total events)`;
+      document.getElementById('btnAuditPrev').disabled = (data.page <= 1);
+      document.getElementById('btnAuditNext').disabled = (data.page >= auditPages);
+
+      if (window.lucide) lucide.createIcons();
+
+    } catch (e) {
+      console.error(e);
+    }
+  }
+
+  document.getElementById('btnAuditPrev').addEventListener('click', () => {
+    if (auditPage > 1) loadAuditLogs(auditPage - 1);
+  });
+  document.getElementById('btnAuditNext').addEventListener('click', () => {
+    if (auditPage < auditPages) loadAuditLogs(auditPage + 1);
+  });
+
+  document.addEventListener('DOMContentLoaded', () => loadAuditLogs(1));
+</script>
+{% endblock %}
+

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Transaction History – FraudGuard Audit Log{% endblock %}
+{% block page_title %}Transaction History & Audit Trail{% endblock %}
+{% block page_subtitle %}Review all evaluated transactions stored securely in the SQLite database{% endblock %}
+
+{% block content %}
+<div id="history-view">
+  <!-- CONTROLS & FILTER BAR -->
+  <div class="card" style="margin-bottom: 1.25rem;">
+    <div class="card-body" style="padding: 1rem 1.25rem;">
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <!-- Search -->
+        <div style="flex: 1; min-width: 240px; position: relative;">
+          <input type="text" id="history-search" class="form-control" placeholder="Search by Transaction ID, Type, or Account..." style="padding-left: 2.5rem;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-dim)" stroke-width="2" style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+        </div>
+
+        <!-- Filter by Status -->
+        <div style="min-width: 170px;">
+          <select id="history-status" class="form-control">
+            <option value="all">Status: All Records</option>
+            <option value="legitimate">Status: Legitimate Only</option>
+            <option value="fraud">Status: Fraud Only</option>
+          </select>
+        </div>
+
+        <!-- Sort By -->
+        <div style="min-width: 180px;">
+          <select id="history-sort" class="form-control">
+            <option value="date_desc">Sort: Newest First</option>
+            <option value="date_asc">Sort: Oldest First</option>
+            <option value="amount_desc">Sort: Amount (High to Low)</option>
+            <option value="amount_asc">Sort: Amount (Low to High)</option>
+          </select>
+        </div>
+
+        <!-- Record Count Badge -->
+        <div id="history-total-count" style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; padding: 0.5rem 0.75rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+          Loading...
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TABLE CARD -->
+  <div class="card">
+    <div class="card-body" style="padding: 0;">
+      <div class="table-responsive">
+        <table class="custom-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Channel</th>
+              <th>Amount</th>
+              <th>Sender Flow</th>
+              <th>Recipient Flow</th>
+              <th>ML Decision</th>
+              <th>Risk Tier</th>
+              <th>Timestamp</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <!-- Populated via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Empty State -->
+      <div id="history-empty" class="empty-state" style="display: none;">
+        <div class="empty-icon">
+          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+        </div>
+        <h4>No Matching Transactions Found</h4>
+        <p>No transaction records match your search or filter parameters. Try clearing your filters or analyzing a new payment.</p>
+        <div style="margin-top: 0.5rem;">
+          <a href="{{ url_for('detection_view') }}" class="btn btn-primary btn-sm">
+            <span>Analyze a Transaction</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
